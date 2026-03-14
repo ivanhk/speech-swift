@@ -10,9 +10,9 @@
 |-------|--------|------|------|------|-----|------------|--------|
 | Qwen3-ASR 0.6B | MLX (GPU) | 4-bit | 675 MB | 3.34 | 0.023 | 2.4s | 0.3s |
 | Qwen3-ASR 0.6B | MLX (GPU) | 8-bit | 960 MB | 2.80 | 0.025 | 2.4s | 0.5s |
-| Parakeet TDT 0.6B | CoreML (ANE) | INT4 | 332 MB | — | 0.295 | 23.3s | 2.4s |
+| Parakeet TDT 0.6B | CoreML (ANE) | INT4 | 332 MB | 2.89* | 0.295 | 23.3s | 2.4s |
 
-Parakeet WER pending (full run in progress).
+*Parakeet WER from 160/2620 utterances (partial run).
 
 **Machine**: Apple M2 Max, 64 GB, macOS 14, release build with compiled metallib.
 
