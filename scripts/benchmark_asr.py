@@ -2,16 +2,19 @@
 """
 ASR WER benchmark for speech-swift.
 
-Downloads LibriSpeech test-clean, runs transcription via CLI, computes WER.
+Datasets:
+  - LibriSpeech test-clean (English, 2620 utterances, ~350 MB)
+  - CommonVoice test splits (multilingual: en, zh, de, es, fr)
 
 Usage:
-    python scripts/benchmark_asr.py [--engine qwen3] [--model 0.6B] [--num-files 10]
+    python scripts/benchmark_asr.py [--engine qwen3] [--model 0.6B]
+    python scripts/benchmark_asr.py --dataset commonvoice --language zh
     python scripts/benchmark_asr.py --download-only
-    python scripts/benchmark_asr.py --score-only
     python scripts/benchmark_asr.py --compare
 """
 
 import argparse
+import csv
 import json
 import os
 import re
@@ -23,12 +26,23 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+# ---------------------------------------------------------------------------
+# Dataset config
+# ---------------------------------------------------------------------------
+
 LIBRISPEECH_URL = "https://www.openslr.org/resources/12/test-clean.tar.gz"
 
-BENCHMARK_DIR = Path("benchmarks/librispeech")
-DATA_DIR = BENCHMARK_DIR / "test-clean"
-HYP_DIR = BENCHMARK_DIR / "hyp"
-RESULTS_FILE = BENCHMARK_DIR / "results.json"
+# CommonVoice 17.0 — direct download without auth via HuggingFace mirror
+# Users can also download manually from https://commonvoice.mozilla.org
+COMMONVOICE_LANGUAGES = {
+    "en": "English",
+    "zh-CN": "Chinese",
+    "de": "German",
+    "es": "Spanish",
+    "fr": "French",
+}
+
+BENCHMARK_BASE = Path("benchmarks")
 
 
 # ---------------------------------------------------------------------------
@@ -51,7 +65,6 @@ def compute_wer(reference: str, hypothesis: str) -> dict:
     n = len(ref)
     m = len(hyp)
 
-    # DP table
     d = [[0] * (m + 1) for _ in range(n + 1)]
     for i in range(n + 1):
         d[i][0] = i
@@ -64,7 +77,6 @@ def compute_wer(reference: str, hypothesis: str) -> dict:
             else:
                 d[i][j] = 1 + min(d[i - 1][j], d[i][j - 1], d[i - 1][j - 1])
 
-    # Backtrace for S/I/D
     subs, ins, dels = 0, 0, 0
     i, j = n, m
     while i > 0 or j > 0:
@@ -97,55 +109,45 @@ def compute_wer(reference: str, hypothesis: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Data download
+# LibriSpeech download & loading
 # ---------------------------------------------------------------------------
 
 def download_librispeech():
     """Download and extract LibriSpeech test-clean (~350 MB)."""
-    BENCHMARK_DIR.mkdir(parents=True, exist_ok=True)
+    bench_dir = BENCHMARK_BASE / "librispeech"
+    data_dir = bench_dir / "test-clean"
+    bench_dir.mkdir(parents=True, exist_ok=True)
 
-    tar_path = BENCHMARK_DIR / "test-clean.tar.gz"
-    if DATA_DIR.exists() and any(DATA_DIR.rglob("*.flac")):
-        print(f"LibriSpeech test-clean already extracted at {DATA_DIR}")
+    if data_dir.exists() and any(data_dir.rglob("*.flac")):
+        print(f"LibriSpeech test-clean already at {data_dir}")
         return
 
+    tar_path = bench_dir / "test-clean.tar.gz"
     if not tar_path.exists():
         print(f"Downloading LibriSpeech test-clean (~350 MB)...")
-        print(f"  From: {LIBRISPEECH_URL}")
-        print(f"  To:   {tar_path}")
-        try:
-            subprocess.run(
-                ["curl", "-L", "-o", str(tar_path), "--progress-bar",
-                 LIBRISPEECH_URL],
-                check=True,
-            )
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            print(f"  Download failed: {e}")
-            print(f"  Download manually: curl -L -o {tar_path} '{LIBRISPEECH_URL}'")
-            sys.exit(1)
+        subprocess.run(
+            ["curl", "-L", "-o", str(tar_path), "--progress-bar",
+             LIBRISPEECH_URL], check=True)
 
-    print(f"Extracting {tar_path}...")
+    print(f"Extracting...")
     with tarfile.open(tar_path, "r:gz") as tf:
-        # LibriSpeech tar extracts to LibriSpeech/test-clean/...
-        tf.extractall(BENCHMARK_DIR)
+        tf.extractall(bench_dir)
 
-    # Move LibriSpeech/test-clean → benchmarks/librispeech/test-clean
-    extracted = BENCHMARK_DIR / "LibriSpeech" / "test-clean"
-    if extracted.exists() and not DATA_DIR.exists():
-        extracted.rename(DATA_DIR)
-    # Clean up empty LibriSpeech dir
-    ls_dir = BENCHMARK_DIR / "LibriSpeech"
+    extracted = bench_dir / "LibriSpeech" / "test-clean"
+    if extracted.exists() and not data_dir.exists():
+        extracted.rename(data_dir)
+    ls_dir = bench_dir / "LibriSpeech"
     if ls_dir.exists() and not any(ls_dir.iterdir()):
         ls_dir.rmdir()
 
-    flac_count = len(list(DATA_DIR.rglob("*.flac")))
-    print(f"  Extracted {flac_count} FLAC files")
+    print(f"  {len(list(data_dir.rglob('*.flac')))} FLAC files")
 
 
-def load_transcripts() -> list:
-    """Parse LibriSpeech transcript files. Returns [(utterance_id, flac_path, text)]."""
+def load_librispeech(num_files: int = 0) -> list:
+    """Load LibriSpeech transcripts. Returns [(id, path, text, lang)]."""
+    data_dir = BENCHMARK_BASE / "librispeech" / "test-clean"
     utterances = []
-    for trans_file in sorted(DATA_DIR.rglob("*.trans.txt")):
+    for trans_file in sorted(data_dir.rglob("*.trans.txt")):
         chapter_dir = trans_file.parent
         for line in trans_file.read_text().strip().split("\n"):
             parts = line.strip().split(" ", 1)
@@ -154,24 +156,96 @@ def load_transcripts() -> list:
             utt_id, text = parts
             flac_path = chapter_dir / f"{utt_id}.flac"
             if flac_path.exists():
-                utterances.append((utt_id, str(flac_path), text))
-    return sorted(utterances, key=lambda x: x[0])
+                utterances.append((utt_id, str(flac_path), text, "en"))
+    utterances.sort(key=lambda x: x[0])
+    return utterances[:num_files] if num_files > 0 else utterances
 
 
 # ---------------------------------------------------------------------------
-# Transcription
+# CommonVoice download & loading
+# ---------------------------------------------------------------------------
+
+def download_commonvoice(language: str):
+    """Download CommonVoice test split for a language.
+
+    CommonVoice requires manual download from https://commonvoice.mozilla.org
+    or HuggingFace (requires auth token). This function checks for existing
+    data and provides download instructions if missing.
+    """
+    bench_dir = BENCHMARK_BASE / "commonvoice" / language
+    bench_dir.mkdir(parents=True, exist_ok=True)
+
+    clips_dir = bench_dir / "clips"
+    tsv_path = bench_dir / "test.tsv"
+
+    if clips_dir.exists() and tsv_path.exists():
+        print(f"CommonVoice {language} already at {bench_dir}")
+        return True
+
+    print(f"\nCommonVoice {language} data not found at {bench_dir}")
+    print(f"CommonVoice requires manual download:")
+    print(f"  1. Go to https://commonvoice.mozilla.org/en/datasets")
+    print(f"  2. Download Common Voice Corpus for '{COMMONVOICE_LANGUAGES.get(language, language)}'")
+    print(f"  3. Extract test.tsv and clips/ to {bench_dir}/")
+    print(f"     {bench_dir}/test.tsv")
+    print(f"     {bench_dir}/clips/*.mp3")
+    print(f"")
+    print(f"  Or use HuggingFace datasets (requires auth):")
+    print(f"    pip install datasets")
+    print(f"    python -c \"from datasets import load_dataset; "
+          f"ds = load_dataset('mozilla-foundation/common_voice_17_0', "
+          f"'{language}', split='test'); ds.save_to_disk('{bench_dir}')\"")
+    return False
+
+
+def load_commonvoice(language: str, num_files: int = 0) -> list:
+    """Load CommonVoice test transcripts. Returns [(id, path, text, lang)]."""
+    bench_dir = BENCHMARK_BASE / "commonvoice" / language
+    tsv_path = bench_dir / "test.tsv"
+    clips_dir = bench_dir / "clips"
+
+    if not tsv_path.exists():
+        return []
+
+    utterances = []
+    with open(tsv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        for row in reader:
+            audio_path = clips_dir / row["path"]
+            if not audio_path.exists():
+                # Try .mp3 extension
+                mp3_path = clips_dir / (Path(row["path"]).stem + ".mp3")
+                if mp3_path.exists():
+                    audio_path = mp3_path
+                else:
+                    continue
+            text = row.get("sentence", "")
+            if text:
+                utt_id = Path(row["path"]).stem
+                utterances.append((utt_id, str(audio_path), text, language))
+
+    utterances.sort(key=lambda x: x[0])
+    return utterances[:num_files] if num_files > 0 else utterances
+
+
+# ---------------------------------------------------------------------------
+# Transcription with latency tracking
 # ---------------------------------------------------------------------------
 
 def transcribe_file(cli_path: str, audio_path: str, engine: str,
-                    model: str, timeout: int = 120) -> dict:
-    """Run CLI transcription on a single file. Returns parsed result."""
+                    model: str, language: str = None,
+                    timeout: int = 120) -> dict:
+    """Run CLI transcription. Returns text + timing."""
     cmd = [cli_path, "transcribe", audio_path, "--engine", engine]
     if engine in ("qwen3", "qwen3-coreml", "qwen3-coreml-full"):
         cmd.extend(["--model", model])
+    if language:
+        cmd.extend(["--language", language])
 
+    wall_start = time.monotonic()
     result = subprocess.run(
-        cmd, capture_output=True, text=True, timeout=timeout
-    )
+        cmd, capture_output=True, text=True, timeout=timeout)
+    wall_time = time.monotonic() - wall_start
 
     if result.returncode != 0:
         return {"error": result.stderr.strip()[:200]}
@@ -179,6 +253,7 @@ def transcribe_file(cli_path: str, audio_path: str, engine: str,
     text = ""
     rtf = 0.0
     inference_time = 0.0
+    warmup_time = 0.0
 
     for line in result.stdout.split("\n"):
         if line.startswith("Result: "):
@@ -188,28 +263,63 @@ def transcribe_file(cli_path: str, audio_path: str, engine: str,
             if m:
                 inference_time = float(m.group(1))
                 rtf = float(m.group(2))
+            # Parse warmup if present
+            w = re.search(r"warmup:\s*([\d.]+)s", line)
+            if w:
+                warmup_time = float(w.group(1))
 
-    return {"text": text, "rtf": rtf, "inference_time": inference_time}
+    return {
+        "text": text,
+        "rtf": rtf,
+        "inference_time": inference_time,
+        "warmup_time": warmup_time,
+        "wall_time": round(wall_time, 3),
+        "model_load_time": round(wall_time - inference_time - warmup_time, 3),
+    }
+
+
+def run_warmup(cli_path: str, audio_path: str, engine: str,
+               model: str) -> dict:
+    """Run a single warmup inference and return timing."""
+    print("  Warmup inference...", end=" ", flush=True)
+    out = transcribe_file(cli_path, audio_path, engine, model, timeout=300)
+    if "error" in out:
+        print(f"FAILED: {out['error']}")
+        return {}
+    print(f"done (wall={out['wall_time']:.1f}s, "
+          f"inference={out['inference_time']:.2f}s)")
+    return {
+        "warmup_wall_time": out["wall_time"],
+        "warmup_inference_time": out["inference_time"],
+    }
 
 
 def run_transcriptions(cli_path: str, utterances: list, engine: str,
-                       model: str, timeout: int = 120) -> list:
-    """Transcribe all utterances and return per-file results."""
-    HYP_DIR.mkdir(parents=True, exist_ok=True)
-    hyp_subdir = HYP_DIR / f"{engine}_{model}"
+                       model: str, timeout: int = 120,
+                       measure_warmup: bool = True) -> tuple:
+    """Transcribe all utterances. Returns (per_file_results, latency_info)."""
+    hyp_dir = BENCHMARK_BASE / "librispeech" / "hyp"
+    hyp_dir.mkdir(parents=True, exist_ok=True)
+    hyp_subdir = hyp_dir / f"{engine}_{model}"
     hyp_subdir.mkdir(parents=True, exist_ok=True)
+
+    # Warmup: first inference includes model load + shader compilation
+    latency = {}
+    if measure_warmup and utterances:
+        latency = run_warmup(cli_path, utterances[0][1], engine, model)
 
     results = []
     total = len(utterances)
     failures = 0
 
-    for idx, (utt_id, flac_path, ref_text) in enumerate(utterances):
+    for idx, (utt_id, audio_path, ref_text, lang) in enumerate(utterances):
         pct = (idx + 1) / total * 100
         print(f"\r  [{idx+1}/{total}] ({pct:.0f}%) {utt_id}...",
               end="", flush=True)
 
         try:
-            out = transcribe_file(cli_path, flac_path, engine, model, timeout)
+            out = transcribe_file(
+                cli_path, audio_path, engine, model, lang, timeout)
         except subprocess.TimeoutExpired:
             out = {"error": "timeout"}
         except Exception as e:
@@ -217,22 +327,17 @@ def run_transcriptions(cli_path: str, utterances: list, engine: str,
 
         if "error" in out:
             failures += 1
-            results.append({
-                "utterance_id": utt_id,
-                "error": out["error"],
-            })
+            results.append({"utterance_id": utt_id, "error": out["error"]})
             continue
 
-        # Save hypothesis
         (hyp_subdir / f"{utt_id}.txt").write_text(out["text"])
-
-        # Score
         wer_result = compute_wer(ref_text, out["text"])
 
         results.append({
             "utterance_id": utt_id,
             "reference": normalize_text(ref_text),
             "hypothesis": normalize_text(out["text"]),
+            "language": lang,
             "wer": wer_result["wer"],
             "substitutions": wer_result["substitutions"],
             "insertions": wer_result["insertions"],
@@ -240,53 +345,23 @@ def run_transcriptions(cli_path: str, utterances: list, engine: str,
             "ref_words": wer_result["ref_words"],
             "rtf": out["rtf"],
             "inference_time": out["inference_time"],
+            "wall_time": out["wall_time"],
         })
 
-    print()  # newline after progress
+    print()
     if failures:
         print(f"  {failures} utterances failed")
 
-    return results
+    return results, latency
 
 
 # ---------------------------------------------------------------------------
-# Scoring
+# Aggregation & reporting
 # ---------------------------------------------------------------------------
 
-def score_existing(engine: str, model: str) -> list:
-    """Re-score existing hypothesis files."""
-    hyp_subdir = HYP_DIR / f"{engine}_{model}"
-    if not hyp_subdir.exists():
-        print(f"No hypothesis directory: {hyp_subdir}")
-        return []
-
-    utterances = load_transcripts()
-    ref_map = {u[0]: u[2] for u in utterances}
-
-    results = []
-    for hyp_file in sorted(hyp_subdir.glob("*.txt")):
-        utt_id = hyp_file.stem
-        if utt_id not in ref_map:
-            continue
-        hyp_text = hyp_file.read_text().strip()
-        ref_text = ref_map[utt_id]
-        wer_result = compute_wer(ref_text, hyp_text)
-        results.append({
-            "utterance_id": utt_id,
-            "reference": normalize_text(ref_text),
-            "hypothesis": normalize_text(hyp_text),
-            "wer": wer_result["wer"],
-            "substitutions": wer_result["substitutions"],
-            "insertions": wer_result["insertions"],
-            "deletions": wer_result["deletions"],
-            "ref_words": wer_result["ref_words"],
-        })
-
-    return results
-
-
-def aggregate_results(per_file: list, engine: str, model: str) -> dict:
-    """Compute aggregate WER from per-file results."""
+def aggregate_results(per_file: list, engine: str, model: str,
+                      dataset: str, latency: dict = None) -> dict:
+    """Compute aggregate WER + latency from per-file results."""
     scored = [r for r in per_file if "error" not in r]
     failed = [r for r in per_file if "error" in r]
 
@@ -295,14 +370,15 @@ def aggregate_results(per_file: list, engine: str, model: str) -> dict:
     total_ins = sum(r.get("insertions", 0) for r in scored)
     total_del = sum(r.get("deletions", 0) for r in scored)
     total_errors = total_sub + total_ins + total_del
-    total_time = sum(r.get("inference_time", 0) for r in scored)
+    total_infer = sum(r.get("inference_time", 0) for r in scored)
+    total_wall = sum(r.get("wall_time", 0) for r in scored)
 
     agg_wer = total_errors / max(total_ref, 1) * 100
 
     result = {
         "engine": engine,
         "model": model,
-        "dataset": "librispeech-test-clean",
+        "dataset": dataset,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "num_utterances": len(scored),
         "num_failures": len(failed),
@@ -311,20 +387,28 @@ def aggregate_results(per_file: list, engine: str, model: str) -> dict:
         "total_substitutions": total_sub,
         "total_insertions": total_ins,
         "total_deletions": total_del,
-        "total_inference_time_s": round(total_time, 2),
+        "latency": {
+            "total_inference_s": round(total_infer, 2),
+            "total_wall_s": round(total_wall, 2),
+            "mean_model_load_overhead_s": round(
+                (total_wall - total_infer) / max(len(scored), 1), 3),
+        },
         "per_file": per_file,
     }
 
-    # RTF if available
     rtfs = [r["rtf"] for r in scored if r.get("rtf", 0) > 0]
     if rtfs:
-        result["mean_rtf"] = round(sum(rtfs) / len(rtfs), 4)
+        result["latency"]["mean_rtf"] = round(sum(rtfs) / len(rtfs), 4)
+
+    if latency:
+        result["latency"]["warmup"] = latency
 
     return result
 
 
 def print_summary(results: dict):
     """Print summary table."""
+    lat = results.get("latency", {})
     print(f"\n{'='*60}")
     print(f"ASR Benchmark: {results['dataset']}")
     print(f"Engine: {results['engine']}, Model: {results['model']}")
@@ -336,12 +420,18 @@ def print_summary(results: dict):
     print(f"  Substitutions:  {results['total_substitutions']}")
     print(f"  Insertions:     {results['total_insertions']}")
     print(f"  Deletions:      {results['total_deletions']}")
-    if "mean_rtf" in results:
-        print(f"  Mean RTF:       {results['mean_rtf']:.4f}")
+    if lat.get("mean_rtf"):
+        print(f"  Mean RTF:       {lat['mean_rtf']:.4f}")
+    warmup = lat.get("warmup", {})
+    if warmup:
+        print(f"  Warmup wall:    {warmup.get('warmup_wall_time', 0):.1f}s")
+        print(f"  Warmup infer:   {warmup.get('warmup_inference_time', 0):.2f}s")
+    if lat.get("mean_model_load_overhead_s"):
+        print(f"  Load overhead:  {lat['mean_model_load_overhead_s']:.3f}s/file")
     print(f"{'='*60}")
 
-    # Show worst utterances
-    scored = [r for r in results["per_file"] if "error" not in r and r["wer"] > 0]
+    scored = [r for r in results["per_file"]
+              if "error" not in r and r["wer"] > 0]
     if scored:
         worst = sorted(scored, key=lambda x: x["wer"], reverse=True)[:10]
         print(f"\nWorst 10 utterances:")
@@ -364,31 +454,35 @@ ENGINE_CONFIGS = [
 ]
 
 
-def run_comparison(cli_path: str, utterances: list, timeout: int = 120):
-    """Run all engine/model combinations and print comparison table."""
+def run_comparison(cli_path: str, utterances: list, dataset: str,
+                   timeout: int = 120):
+    """Run all engine/model combinations."""
     all_results = []
 
     for engine, model in ENGINE_CONFIGS:
         print(f"\n--- {engine} / {model} ---")
-        per_file = run_transcriptions(
+        per_file, latency = run_transcriptions(
             cli_path, utterances, engine, model, timeout)
-        agg = aggregate_results(per_file, engine, model)
+        agg = aggregate_results(per_file, engine, model, dataset, latency)
         all_results.append(agg)
         print_summary(agg)
 
-        # Save per-engine results
-        out_file = BENCHMARK_DIR / f"results_{engine}_{model}.json"
+        out_file = BENCHMARK_BASE / "librispeech" / f"results_{engine}_{model}.json"
         with open(out_file, "w") as f:
             json.dump(agg, f, indent=2)
 
-    # Comparison table
-    print(f"\n{'='*60}")
-    print(f"{'Engine':<20} {'Model':<12} {'WER%':>8} {'RTF':>8}")
-    print(f"{'-'*20} {'-'*12} {'-'*8} {'-'*8}")
+    lat_key = lambda r: r.get("latency", {}).get("mean_rtf", 0)
+    print(f"\n{'='*70}")
+    print(f"{'Engine':<16} {'Model':<12} {'WER%':>8} {'RTF':>8} {'Warmup':>8}")
+    print(f"{'-'*16} {'-'*12} {'-'*8} {'-'*8} {'-'*8}")
     for r in all_results:
-        rtf_str = f"{r['mean_rtf']:.4f}" if "mean_rtf" in r else "N/A"
-        print(f"{r['engine']:<20} {r['model']:<12} {r['aggregate_wer']:>7.2f}% {rtf_str:>8}")
-    print(f"{'='*60}")
+        lat = r.get("latency", {})
+        rtf = f"{lat['mean_rtf']:.4f}" if lat.get("mean_rtf") else "N/A"
+        wu = lat.get("warmup", {})
+        warmup = f"{wu['warmup_wall_time']:.1f}s" if wu.get("warmup_wall_time") else "N/A"
+        print(f"{r['engine']:<16} {r['model']:<12} "
+              f"{r['aggregate_wer']:>7.2f}% {rtf:>8} {warmup:>8}")
+    print(f"{'='*70}")
 
 
 # ---------------------------------------------------------------------------
@@ -397,72 +491,103 @@ def run_comparison(cli_path: str, utterances: list, timeout: int = 120):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="ASR WER benchmark (LibriSpeech test-clean)")
+        description="ASR WER benchmark (LibriSpeech + CommonVoice)")
     parser.add_argument("--cli-path", default=".build/release/audio",
                         help="Path to audio CLI binary")
+    parser.add_argument("--dataset", default="librispeech",
+                        choices=["librispeech", "commonvoice"],
+                        help="Benchmark dataset")
+    parser.add_argument("--language", default="en",
+                        help="Language for CommonVoice (en, zh-CN, de, es, fr)")
     parser.add_argument("--engine", default="qwen3",
-                        help="ASR engine: qwen3, parakeet, qwen3-coreml, "
-                             "qwen3-coreml-full")
+                        help="ASR engine: qwen3, parakeet, qwen3-coreml")
     parser.add_argument("--model", default="0.6B",
                         help="Model variant: 0.6B, 0.6B-8bit, 1.7B, 1.7B-4bit")
     parser.add_argument("--num-files", type=int, default=0,
                         help="Limit number of utterances (0 = all)")
     parser.add_argument("--timeout", type=int, default=120,
                         help="Per-file timeout in seconds")
+    parser.add_argument("--no-warmup", action="store_true",
+                        help="Skip warmup measurement")
     parser.add_argument("--download-only", action="store_true",
-                        help="Only download and extract test data")
+                        help="Only download test data")
     parser.add_argument("--score-only", action="store_true",
                         help="Re-score existing hypothesis transcriptions")
     parser.add_argument("--compare", action="store_true",
                         help="Run all engine/model combinations")
     args = parser.parse_args()
 
-    # Download
-    if not args.score_only:
-        download_librispeech()
+    # Dataset selection
+    if args.dataset == "commonvoice":
+        if not args.score_only:
+            available = download_commonvoice(args.language)
+            if args.download_only:
+                return
+            if not available:
+                sys.exit(1)
 
-    if args.download_only:
-        print("\nDownload complete.")
-        return
+        utterances = load_commonvoice(args.language, args.num_files)
+        dataset_name = f"commonvoice-{args.language}"
+    else:
+        if not args.score_only:
+            download_librispeech()
+        if args.download_only:
+            print("\nDownload complete.")
+            return
+        utterances = load_librispeech(args.num_files)
+        dataset_name = "librispeech-test-clean"
 
-    # Load transcripts
-    utterances = load_transcripts()
     if not utterances:
-        print("No transcripts found. Run with --download-only first.")
+        print("No utterances found. Check dataset or run --download-only.")
+        sys.exit(1)
+    print(f"Loaded {len(utterances)} utterances ({dataset_name})")
+
+    if not Path(args.cli_path).exists():
+        print(f"CLI not found: {args.cli_path}. Build with: make build")
         sys.exit(1)
 
-    if args.num_files > 0:
-        utterances = utterances[:args.num_files]
-    print(f"Loaded {len(utterances)} utterances")
-
-    # Comparison mode
     if args.compare:
-        if not Path(args.cli_path).exists():
-            print(f"CLI not found: {args.cli_path}. Build with: make build")
-            sys.exit(1)
-        run_comparison(args.cli_path, utterances, args.timeout)
+        run_comparison(args.cli_path, utterances, dataset_name, args.timeout)
         return
 
-    # Single engine mode
     if args.score_only:
-        per_file = score_existing(args.engine, args.model)
-    else:
-        if not Path(args.cli_path).exists():
-            print(f"CLI not found: {args.cli_path}. Build with: make build")
+        # Re-score from saved hypotheses
+        hyp_dir = BENCHMARK_BASE / "librispeech" / "hyp" / f"{args.engine}_{args.model}"
+        if not hyp_dir.exists():
+            print(f"No hypotheses at {hyp_dir}")
             sys.exit(1)
+        ref_map = {u[0]: u[2] for u in utterances}
+        per_file = []
+        for hf in sorted(hyp_dir.glob("*.txt")):
+            uid = hf.stem
+            if uid not in ref_map:
+                continue
+            wer_result = compute_wer(ref_map[uid], hf.read_text().strip())
+            per_file.append({
+                "utterance_id": uid,
+                "reference": normalize_text(ref_map[uid]),
+                "hypothesis": normalize_text(hf.read_text().strip()),
+                **wer_result,
+            })
+        latency = {}
+    else:
         print(f"\nTranscribing with {args.engine}/{args.model}...")
-        per_file = run_transcriptions(
-            args.cli_path, utterances, args.engine, args.model, args.timeout)
+        per_file, latency = run_transcriptions(
+            args.cli_path, utterances, args.engine, args.model,
+            args.timeout, measure_warmup=not args.no_warmup)
 
     if not per_file:
-        print("No results to score.")
+        print("No results.")
         return
 
-    results = aggregate_results(per_file, args.engine, args.model)
+    results = aggregate_results(
+        per_file, args.engine, args.model, dataset_name, latency)
     print_summary(results)
 
-    # Save
-    out_file = BENCHMARK_DIR / f"results_{args.engine}_{args.model}.json"
+    out_dir = BENCHMARK_BASE / args.dataset
+    out_dir.mkdir(parents=True, exist_ok=True)
+    suffix = f"_{args.language}" if args.dataset == "commonvoice" else ""
+    out_file = out_dir / f"results_{args.engine}_{args.model}{suffix}.json"
     with open(out_file, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {out_file}")

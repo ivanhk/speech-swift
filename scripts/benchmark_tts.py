@@ -3,7 +3,7 @@
 TTS round-trip WER benchmark for speech-swift.
 
 Synthesizes text, transcribes the audio back, computes WER vs original.
-Measures TTS intelligibility end-to-end.
+Parses TTS stage breakdown: embed / generate / decode.
 
 Usage:
     python scripts/benchmark_tts.py [--tts-engine qwen3] [--num-sentences 10]
@@ -24,21 +24,21 @@ from pathlib import Path
 
 BENCHMARK_DIR = Path("benchmarks/tts")
 
-# Built-in test corpus: diverse phonemes, lengths, punctuation
+# Built-in test corpus: diverse lengths and phonemes
 TEST_SENTENCES = [
-    # Short
+    # Short (2-5 words)
     "Hello world.",
     "Good morning everyone.",
     "Thank you very much.",
     "What time is it?",
     "Nice to meet you.",
-    # Medium
+    # Medium (8-15 words)
     "The quick brown fox jumps over the lazy dog.",
     "Can you guarantee that the replacement part will be shipped tomorrow?",
     "The weather is beautiful today, perfect for a walk in the park.",
     "Please make sure to send the report before the end of the day.",
     "I would like to schedule a meeting for next Wednesday afternoon.",
-    # Long
+    # Long (20+ words)
     "Scientists have discovered a new species of deep sea fish that can survive "
     "at extreme pressures found at the bottom of the ocean.",
     "The development team has been working around the clock to deliver the new "
@@ -71,11 +71,10 @@ TEST_SENTENCES = [
 
 
 # ---------------------------------------------------------------------------
-# Text normalization & WER (same as benchmark_asr.py)
+# Text normalization & WER
 # ---------------------------------------------------------------------------
 
 def normalize_text(text: str) -> str:
-    """Lowercase, strip punctuation, collapse whitespace."""
     text = text.lower()
     text = re.sub(r"[^\w\s]", "", text)
     text = re.sub(r"\s+", " ", text).strip()
@@ -83,12 +82,9 @@ def normalize_text(text: str) -> str:
 
 
 def compute_wer(reference: str, hypothesis: str) -> dict:
-    """Word Error Rate via edit distance with S/I/D breakdown."""
     ref = normalize_text(reference).split()
     hyp = normalize_text(hypothesis).split()
-
-    n = len(ref)
-    m = len(hyp)
+    n, m = len(ref), len(hyp)
 
     d = [[0] * (m + 1) for _ in range(n + 1)]
     for i in range(n + 1):
@@ -106,40 +102,76 @@ def compute_wer(reference: str, hypothesis: str) -> dict:
     i, j = n, m
     while i > 0 or j > 0:
         if i > 0 and j > 0 and ref[i - 1] == hyp[j - 1]:
-            i -= 1
-            j -= 1
+            i -= 1; j -= 1
         elif i > 0 and j > 0 and d[i][j] == d[i - 1][j - 1] + 1:
-            subs += 1
-            i -= 1
-            j -= 1
+            subs += 1; i -= 1; j -= 1
         elif j > 0 and d[i][j] == d[i][j - 1] + 1:
-            ins += 1
-            j -= 1
+            ins += 1; j -= 1
         else:
-            dels += 1
-            i -= 1
+            dels += 1; i -= 1
 
     errors = subs + ins + dels
-    wer = errors / max(n, 1) * 100
-
     return {
-        "wer": round(wer, 2),
-        "errors": errors,
-        "substitutions": subs,
-        "insertions": ins,
-        "deletions": dels,
-        "ref_words": n,
-        "hyp_words": m,
+        "wer": round(errors / max(n, 1) * 100, 2),
+        "errors": errors, "substitutions": subs,
+        "insertions": ins, "deletions": dels,
+        "ref_words": n, "hyp_words": m,
     }
 
 
 # ---------------------------------------------------------------------------
-# TTS + ASR pipeline
+# TTS + ASR pipeline with latency breakdown
 # ---------------------------------------------------------------------------
+
+def parse_tts_timing(stdout: str) -> dict:
+    """Parse detailed TTS timing from model output.
+
+    Qwen3-TTS prints:
+      Timing: embed=0.033s | generate=3.540s (29 steps, 122ms/step) | decode=0.123s | total=3.702s | audio=2.20s | RTF=1.68
+    CosyVoice prints:
+      Duration: 2.68s, Time: 4.53s, RTF: 1.69
+    """
+    timing = {}
+
+    for line in stdout.split("\n"):
+        # Qwen3-TTS detailed breakdown
+        if "embed=" in line and "generate=" in line and "decode=" in line:
+            m = re.search(r"embed=([\d.]+)s", line)
+            if m:
+                timing["embed_s"] = float(m.group(1))
+            m = re.search(r"generate=([\d.]+)s\s*\((\d+)\s*steps?,\s*([\d.]+)ms/step\)", line)
+            if m:
+                timing["generate_s"] = float(m.group(1))
+                timing["steps"] = int(m.group(2))
+                timing["ms_per_step"] = float(m.group(3))
+            m = re.search(r"decode=([\d.]+)s", line)
+            if m:
+                timing["decode_s"] = float(m.group(1))
+            m = re.search(r"total=([\d.]+)s", line)
+            if m:
+                timing["total_s"] = float(m.group(1))
+            m = re.search(r"audio=([\d.]+)s", line)
+            if m:
+                timing["audio_s"] = float(m.group(1))
+            m = re.search(r"RTF=([\d.]+)", line)
+            if m:
+                timing["rtf"] = float(m.group(1))
+
+        # CosyVoice / generic format
+        m = re.search(
+            r"Duration:\s*([\d.]+)s.*Time:\s*([\d.]+)s.*RTF:\s*([\d.]+)",
+            line)
+        if m and "total_s" not in timing:
+            timing["audio_s"] = float(m.group(1))
+            timing["total_s"] = float(m.group(2))
+            timing["rtf"] = float(m.group(3))
+
+    return timing
+
 
 def synthesize(cli_path: str, text: str, output_path: str,
                engine: str, model: str, timeout: int = 180) -> dict:
-    """Synthesize text to audio file. Returns timing info."""
+    """Synthesize text to audio file. Returns timing breakdown."""
     if engine == "kokoro":
         cmd = [cli_path, "kokoro", text, "--output", output_path]
     else:
@@ -148,58 +180,39 @@ def synthesize(cli_path: str, text: str, output_path: str,
         if engine == "qwen3" and model != "default":
             cmd.extend(["--model", model])
 
+    wall_start = time.monotonic()
     result = subprocess.run(
-        cmd, capture_output=True, text=True, timeout=timeout
-    )
+        cmd, capture_output=True, text=True, timeout=timeout)
+    wall_time = time.monotonic() - wall_start
 
     if result.returncode != 0:
         return {"error": result.stderr.strip()[:200]}
 
-    tts_rtf = 0.0
-    tts_time = 0.0
-    audio_duration = 0.0
-
-    for line in result.stdout.split("\n"):
-        m = re.search(
-            r"Duration:\s*([\d.]+)s.*Time:\s*([\d.]+)s.*RTF:\s*([\d.]+)",
-            line)
-        if m:
-            audio_duration = float(m.group(1))
-            tts_time = float(m.group(2))
-            tts_rtf = float(m.group(3))
-
-    return {
-        "tts_rtf": tts_rtf,
-        "tts_time": tts_time,
-        "audio_duration": audio_duration,
-    }
+    timing = parse_tts_timing(result.stdout)
+    timing["wall_time"] = round(wall_time, 3)
+    return timing
 
 
 def transcribe(cli_path: str, audio_path: str, asr_engine: str,
                asr_model: str, timeout: int = 120) -> dict:
-    """Transcribe audio file. Returns text and timing."""
     cmd = [cli_path, "transcribe", audio_path, "--engine", asr_engine]
     if asr_engine in ("qwen3", "qwen3-coreml", "qwen3-coreml-full"):
         cmd.extend(["--model", asr_model])
 
     result = subprocess.run(
-        cmd, capture_output=True, text=True, timeout=timeout
-    )
-
+        cmd, capture_output=True, text=True, timeout=timeout)
     if result.returncode != 0:
         return {"error": result.stderr.strip()[:200]}
 
     text = ""
     asr_rtf = 0.0
-
     for line in result.stdout.split("\n"):
         if line.startswith("Result: "):
             text = line[len("Result: "):]
-        elif "Time:" in line and "RTF:" in line:
+        elif "RTF:" in line:
             m = re.search(r"RTF:\s*([\d.]+)", line)
             if m:
                 asr_rtf = float(m.group(1))
-
     return {"text": text, "asr_rtf": asr_rtf}
 
 
@@ -231,16 +244,14 @@ def run_benchmark(cli_path: str, sentences: list,
 
             if "error" in tts_out:
                 results.append({
-                    "index": idx,
-                    "input_text": text,
+                    "index": idx, "input_text": text,
                     "error": f"TTS: {tts_out['error']}",
                 })
                 continue
 
             if not os.path.exists(wav_path):
                 results.append({
-                    "index": idx,
-                    "input_text": text,
+                    "index": idx, "input_text": text,
                     "error": "TTS produced no output file",
                 })
                 continue
@@ -256,16 +267,14 @@ def run_benchmark(cli_path: str, sentences: list,
 
             if "error" in asr_out:
                 results.append({
-                    "index": idx,
-                    "input_text": text,
+                    "index": idx, "input_text": text,
                     "error": f"ASR: {asr_out['error']}",
                 })
                 continue
 
-            # Score
             wer_result = compute_wer(text, asr_out["text"])
 
-            results.append({
+            entry = {
                 "index": idx,
                 "input_text": normalize_text(text),
                 "transcription": normalize_text(asr_out["text"]),
@@ -274,19 +283,18 @@ def run_benchmark(cli_path: str, sentences: list,
                 "insertions": wer_result["insertions"],
                 "deletions": wer_result["deletions"],
                 "ref_words": wer_result["ref_words"],
-                "tts_rtf": tts_out["tts_rtf"],
-                "tts_time": tts_out["tts_time"],
-                "audio_duration": tts_out["audio_duration"],
                 "asr_rtf": asr_out["asr_rtf"],
-            })
+                "tts_timing": {k: v for k, v in tts_out.items()
+                               if k != "error"},
+            }
+            results.append(entry)
 
-    print()  # newline after progress
+    print()
     return results
 
 
 def aggregate_results(per_sentence: list, tts_engine: str, tts_model: str,
                       asr_engine: str, asr_model: str) -> dict:
-    """Compute aggregate metrics."""
     scored = [r for r in per_sentence if "error" not in r]
     failed = [r for r in per_sentence if "error" in r]
 
@@ -295,8 +303,17 @@ def aggregate_results(per_sentence: list, tts_engine: str, tts_model: str,
     total_ins = sum(r.get("insertions", 0) for r in scored)
     total_del = sum(r.get("deletions", 0) for r in scored)
     total_errors = total_sub + total_ins + total_del
-
     agg_wer = total_errors / max(total_ref, 1) * 100
+
+    # Latency aggregation
+    timings = [r["tts_timing"] for r in scored if "tts_timing" in r]
+    latency = {}
+    if timings:
+        for key in ["embed_s", "generate_s", "decode_s", "total_s",
+                     "audio_s", "rtf", "ms_per_step"]:
+            vals = [t[key] for t in timings if key in t]
+            if vals:
+                latency[f"mean_{key}"] = round(sum(vals) / len(vals), 4)
 
     result = {
         "tts_engine": tts_engine,
@@ -311,18 +328,14 @@ def aggregate_results(per_sentence: list, tts_engine: str, tts_model: str,
         "total_substitutions": total_sub,
         "total_insertions": total_ins,
         "total_deletions": total_del,
+        "latency": latency,
         "per_sentence": per_sentence,
     }
-
-    tts_rtfs = [r["tts_rtf"] for r in scored if r.get("tts_rtf", 0) > 0]
-    if tts_rtfs:
-        result["mean_tts_rtf"] = round(sum(tts_rtfs) / len(tts_rtfs), 4)
-
     return result
 
 
 def print_summary(results: dict):
-    """Print summary."""
+    lat = results.get("latency", {})
     print(f"\n{'='*60}")
     print(f"TTS Round-Trip Benchmark")
     print(f"TTS: {results['tts_engine']}/{results['tts_model']}  "
@@ -332,14 +345,18 @@ def print_summary(results: dict):
           f" ({results['num_failures']} failed)")
     print(f"  Round-trip WER: {results['aggregate_wer']:.2f}%")
     print(f"  Total words:    {results['total_ref_words']}")
-    print(f"  Substitutions:  {results['total_substitutions']}")
-    print(f"  Insertions:     {results['total_insertions']}")
-    print(f"  Deletions:      {results['total_deletions']}")
-    if "mean_tts_rtf" in results:
-        print(f"  Mean TTS RTF:   {results['mean_tts_rtf']:.4f}")
+    if lat.get("mean_rtf"):
+        print(f"  Mean TTS RTF:   {lat['mean_rtf']:.2f}")
+    if lat.get("mean_embed_s"):
+        print(f"  Mean embed:     {lat['mean_embed_s']*1000:.0f}ms")
+    if lat.get("mean_generate_s"):
+        print(f"  Mean generate:  {lat['mean_generate_s']*1000:.0f}ms")
+    if lat.get("mean_ms_per_step"):
+        print(f"  Mean ms/step:   {lat['mean_ms_per_step']:.0f}ms")
+    if lat.get("mean_decode_s"):
+        print(f"  Mean decode:    {lat['mean_decode_s']*1000:.0f}ms")
     print(f"{'='*60}")
 
-    # Show errors
     scored = [r for r in results["per_sentence"] if "error" not in r]
     errors = [r for r in scored if r["wer"] > 0]
     if errors:
@@ -364,7 +381,6 @@ TTS_CONFIGS = [
 
 def run_comparison(cli_path: str, sentences: list,
                    asr_engine: str, asr_model: str, timeout: int = 180):
-    """Run all TTS engines and print comparison."""
     all_results = []
 
     for tts_engine, tts_model in TTS_CONFIGS:
@@ -381,15 +397,19 @@ def run_comparison(cli_path: str, sentences: list,
         with open(out_file, "w") as f:
             json.dump(agg, f, indent=2)
 
-    # Comparison table
-    print(f"\n{'='*60}")
-    print(f"{'TTS Engine':<16} {'Model':<12} {'WER%':>8} {'TTS RTF':>10}")
-    print(f"{'-'*16} {'-'*12} {'-'*8} {'-'*10}")
+    print(f"\n{'='*70}")
+    print(f"{'TTS Engine':<16} {'Model':<10} {'WER%':>7} {'RTF':>6} "
+          f"{'ms/step':>8} {'embed':>7} {'decode':>7}")
+    print(f"{'-'*16} {'-'*10} {'-'*7} {'-'*6} {'-'*8} {'-'*7} {'-'*7}")
     for r in all_results:
-        rtf_str = f"{r['mean_tts_rtf']:.4f}" if "mean_tts_rtf" in r else "N/A"
-        print(f"{r['tts_engine']:<16} {r['tts_model']:<12} "
-              f"{r['aggregate_wer']:>7.2f}% {rtf_str:>10}")
-    print(f"{'='*60}")
+        lat = r.get("latency", {})
+        rtf = f"{lat['mean_rtf']:.2f}" if lat.get("mean_rtf") else "N/A"
+        ms = f"{lat['mean_ms_per_step']:.0f}" if lat.get("mean_ms_per_step") else "N/A"
+        emb = f"{lat['mean_embed_s']*1000:.0f}ms" if lat.get("mean_embed_s") else "N/A"
+        dec = f"{lat['mean_decode_s']*1000:.0f}ms" if lat.get("mean_decode_s") else "N/A"
+        print(f"{r['tts_engine']:<16} {r['tts_model']:<10} "
+              f"{r['aggregate_wer']:>6.2f}% {rtf:>6} {ms:>8} {emb:>7} {dec:>7}")
+    print(f"{'='*70}")
 
 
 # ---------------------------------------------------------------------------
@@ -399,22 +419,16 @@ def run_comparison(cli_path: str, sentences: list,
 def main():
     parser = argparse.ArgumentParser(
         description="TTS round-trip WER benchmark")
-    parser.add_argument("--cli-path", default=".build/release/audio",
-                        help="Path to audio CLI binary")
+    parser.add_argument("--cli-path", default=".build/release/audio")
     parser.add_argument("--tts-engine", default="qwen3",
                         help="TTS engine: qwen3, cosyvoice, kokoro")
-    parser.add_argument("--tts-model", default="base",
-                        help="TTS model variant")
-    parser.add_argument("--asr-engine", default="qwen3",
-                        help="ASR engine for transcription")
-    parser.add_argument("--asr-model", default="0.6B",
-                        help="ASR model for transcription")
+    parser.add_argument("--tts-model", default="base")
+    parser.add_argument("--asr-engine", default="qwen3")
+    parser.add_argument("--asr-model", default="0.6B")
     parser.add_argument("--num-sentences", type=int, default=0,
-                        help="Limit number of sentences (0 = all)")
-    parser.add_argument("--input-file", type=str, default=None,
-                        help="File with one sentence per line")
-    parser.add_argument("--timeout", type=int, default=180,
-                        help="Per-sentence timeout in seconds")
+                        help="Limit sentences (0 = all)")
+    parser.add_argument("--input-file", type=str, default=None)
+    parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--compare", action="store_true",
                         help="Run all TTS engines")
     args = parser.parse_args()
@@ -425,34 +439,26 @@ def main():
         print(f"CLI not found: {args.cli_path}. Build with: make build")
         sys.exit(1)
 
-    # Load sentences
-    if args.input_file:
-        sentences = [
-            l.strip() for l in Path(args.input_file).read_text().split("\n")
-            if l.strip()
-        ]
-    else:
-        sentences = TEST_SENTENCES
-
+    sentences = (
+        [l.strip() for l in Path(args.input_file).read_text().split("\n")
+         if l.strip()]
+        if args.input_file else TEST_SENTENCES
+    )
     if args.num_sentences > 0:
         sentences = sentences[:args.num_sentences]
     print(f"Loaded {len(sentences)} test sentences")
 
-    # Comparison mode
     if args.compare:
-        run_comparison(
-            args.cli_path, sentences,
-            args.asr_engine, args.asr_model, args.timeout)
+        run_comparison(args.cli_path, sentences,
+                       args.asr_engine, args.asr_model, args.timeout)
         return
 
-    # Single engine
     print(f"\nTTS: {args.tts_engine}/{args.tts_model}, "
           f"ASR: {args.asr_engine}/{args.asr_model}")
     per_sentence = run_benchmark(
         args.cli_path, sentences,
         args.tts_engine, args.tts_model,
-        args.asr_engine, args.asr_model,
-        args.timeout)
+        args.asr_engine, args.asr_model, args.timeout)
 
     results = aggregate_results(
         per_sentence, args.tts_engine, args.tts_model,
