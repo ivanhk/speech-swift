@@ -42,6 +42,8 @@ Whisper numbers from original papers (FP16 inference).
 
 ## Compression delta
 
+How much accuracy do we lose by quantizing to lower bit widths? This matters for issue #110 (model compression experiments) — it establishes the baseline quality cost of our current quantization before trying more advanced techniques like mixed-bit allocation or outlier decomposition.
+
 | Variant | WER% | Substitutions | Insertions | Deletions | Total errors | Size |
 |---------|------|---------------|------------|-----------|-------------|------|
 | Qwen3 0.6B 8-bit | 2.80 | 1111 | 92 | 268 | 1471 | 960 MB |
