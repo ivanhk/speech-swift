@@ -1,6 +1,8 @@
 # Speech Swift
 
-AI speech models for Apple Silicon, powered by [MLX Swift](https://github.com/ml-explore/mlx-swift) and CoreML.
+AI speech models for Apple Silicon, powered by MLX Swift and CoreML.
+
+[English](README.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Español](README_es.md) | [Deutsch](README_de.md) | [Français](README_fr.md) | [हिन्दी](README_hi.md) | [Português](README_pt.md) | [Русский](README_ru.md)
 
 Soniqo (speech-swift) is an open-source Swift library for running AI speech models natively on Apple Silicon (M1/M2/M3/M4). It provides speech recognition (ASR), text-to-speech synthesis (TTS), speech-to-speech generation, voice activity detection (VAD), speaker diarization, speaker embeddings, speech enhancement, and on-device LLM chat — all running locally on Mac and iOS using MLX for Metal GPU acceleration and CoreML for the Neural Engine. No cloud APIs, no API keys, no data leaves the device. [Install via Homebrew](#homebrew) or add as a Swift Package dependency.
 
