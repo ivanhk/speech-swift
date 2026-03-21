@@ -1,12 +1,14 @@
-[English](README.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Español](README_es.md) | [Deutsch](README_de.md) | [Français](README_fr.md) | [हिन्दी](README_hi.md) | **Português** | [Русский](README_ru.md)
-
 # Speech Swift
 
-Modelos de IA para fala em Apple Silicon, com tecnologia [MLX Swift](https://github.com/ml-explore/mlx-swift) e CoreML.
+Modelos de IA para fala em Apple Silicon, com tecnologia MLX Swift e CoreML.
 
-Soniqo (speech-swift) e uma biblioteca Swift de codigo aberto para executar modelos de IA de fala nativamente em Apple Silicon (M1/M2/M3/M4). Oferece reconhecimento de fala (ASR), sintese de texto para fala (TTS), geracao de fala a partir de fala, deteccao de atividade de voz (VAD), diarizacao de falantes, embeddings de falantes, aprimoramento de fala e chat com LLM no dispositivo — tudo executando localmente em Mac e iOS usando MLX para aceleracao via GPU Metal e CoreML para o Neural Engine. Sem APIs na nuvem, sem chaves de API, nenhum dado sai do dispositivo. [Instale via Homebrew](#homebrew) ou adicione como dependencia do Swift Package.
+📖 Read in: [English](README.md) · [中文](README_zh.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Español](README_es.md) · [Deutsch](README_de.md) · [Français](README_fr.md) · [हिन्दी](README_hi.md) · [Português](README_pt.md) · [Русский](README_ru.md)
 
-**[Documentacao](https://soniqo.audio)** · **[Modelos](https://huggingface.co/aufklarer)** · **[Blog](https://blog.ivan.digital)**
+Reconhecimento, sintese e compreensao de fala no dispositivo para Mac e iOS. Executa localmente no Apple Silicon — sem nuvem, sem chaves de API, nenhum dado sai do dispositivo.
+
+[Instale via Homebrew](#homebrew) ou adicione como dependencia do Swift Package.
+
+**[Documentacao](https://soniqo.audio)** · **[Modelos no HuggingFace](https://huggingface.co/aufklarer)** · **[Blog](https://blog.ivan.digital)**
 
 - **Qwen3-ASR** — Fala para texto / reconhecimento de fala (reconhecimento automatico de fala, 52 idiomas)
 - **Parakeet TDT** — Fala para texto via CoreML (Neural Engine, NVIDIA FastConformer + decodificador TDT, 25 idiomas)

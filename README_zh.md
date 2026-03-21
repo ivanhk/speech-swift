@@ -1,12 +1,14 @@
-[English](README.md) | **中文** | [日本語](README_ja.md) | [한국어](README_ko.md) | [Español](README_es.md) | [Deutsch](README_de.md) | [Français](README_fr.md) | [हिन्दी](README_hi.md) | [Português](README_pt.md) | [Русский](README_ru.md)
-
 # Speech Swift
 
-面向 Apple Silicon 的 AI 语音模型，基于 [MLX Swift](https://github.com/ml-explore/mlx-swift) 和 CoreML 构建。
+面向 Apple Silicon 的 AI 语音模型，基于 MLX Swift 和 CoreML 构建。
 
-Soniqo (speech-swift) 是一个开源 Swift 库，用于在 Apple Silicon (M1/M2/M3/M4) 上原生运行 AI 语音模型。它提供语音识别 (ASR)、文本转语音合成 (TTS)、语音到语音生成、语音活动检测 (VAD)、说话人分离、说话人嵌入向量、语音增强以及端侧 LLM 对话——全部在 Mac 和 iOS 上本地运行，使用 MLX 进行 Metal GPU 加速，使用 CoreML 驱动神经引擎。无需云端 API、无需 API 密钥、数据不出设备。可通过 [Homebrew 安装](#homebrew)或作为 Swift Package 依赖引入。
+📖 Read in: [English](README.md) · [中文](README_zh.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Español](README_es.md) · [Deutsch](README_de.md) · [Français](README_fr.md) · [हिन्दी](README_hi.md) · [Português](README_pt.md) · [Русский](README_ru.md)
 
-**[文档](https://soniqo.audio)** · **[模型](https://huggingface.co/aufklarer)** · **[博客](https://blog.ivan.digital)**
+端侧语音识别、合成与理解，适用于 Mac 和 iOS。完全在 Apple Silicon 上本地运行——无需云端、无需 API 密钥、数据不出设备。
+
+通过 [Homebrew 安装](#homebrew)或作为 Swift Package 依赖引入。
+
+**[文档](https://soniqo.audio)** · **[HuggingFace 模型](https://huggingface.co/aufklarer)** · **[博客](https://blog.ivan.digital)**
 
 - **Qwen3-ASR** — 语音转文字 / 语音识别（自动语音识别，支持 52 种语言）
 - **Parakeet TDT** — 通过 CoreML 进行语音转文字（神经引擎，NVIDIA FastConformer + TDT 解码器，25 种语言）

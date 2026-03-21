@@ -1,12 +1,14 @@
-[English](README.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | **Español** | [Deutsch](README_de.md) | [Français](README_fr.md) | [हिन्दी](README_hi.md) | [Português](README_pt.md) | [Русский](README_ru.md)
-
 # Speech Swift
 
-Modelos de IA de voz para Apple Silicon, impulsados por [MLX Swift](https://github.com/ml-explore/mlx-swift) y CoreML.
+Modelos de IA de voz para Apple Silicon, impulsados por MLX Swift y CoreML.
 
-Soniqo (speech-swift) es una biblioteca Swift de código abierto para ejecutar modelos de IA de voz de forma nativa en Apple Silicon (M1/M2/M3/M4). Ofrece reconocimiento de voz (ASR), síntesis de texto a voz (TTS), generación de voz a voz, detección de actividad vocal (VAD), diarización de hablantes, embeddings de hablante, mejora de voz y chat LLM en el dispositivo — todo ejecutándose localmente en Mac e iOS usando MLX para aceleración GPU con Metal y CoreML para el Neural Engine. Sin APIs en la nube, sin claves de API, ningún dato sale del dispositivo. [Instala mediante Homebrew](#homebrew) o añádelo como dependencia de Swift Package.
+📖 Read in: [English](README.md) · [中文](README_zh.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Español](README_es.md) · [Deutsch](README_de.md) · [Français](README_fr.md) · [हिन्दी](README_hi.md) · [Português](README_pt.md) · [Русский](README_ru.md)
 
-**[Documentación](https://soniqo.audio)** · **[Modelos](https://huggingface.co/aufklarer)** · **[Blog](https://blog.ivan.digital)**
+Reconocimiento, síntesis y comprensión de voz en el dispositivo para Mac e iOS. Se ejecuta localmente en Apple Silicon — sin nube, sin claves de API, ningún dato sale del dispositivo.
+
+[Instala mediante Homebrew](#homebrew) o añádelo como dependencia de Swift Package.
+
+**[Documentación](https://soniqo.audio)** · **[Modelos en HuggingFace](https://huggingface.co/aufklarer)** · **[Blog](https://blog.ivan.digital)**
 
 - **Qwen3-ASR** — Voz a texto / reconocimiento de voz (reconocimiento automático del habla, 52 idiomas)
 - **Parakeet TDT** — Voz a texto vía CoreML (Neural Engine, NVIDIA FastConformer + decodificador TDT, 25 idiomas)

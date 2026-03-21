@@ -1,12 +1,14 @@
-[English](README.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Español](README_es.md) | [Deutsch](README_de.md) | [Français](README_fr.md) | [हिन्दी](README_hi.md) | [Português](README_pt.md) | **Русский**
-
 # Speech Swift
 
-Модели искусственного интеллекта для обработки речи на Apple Silicon, на базе [MLX Swift](https://github.com/ml-explore/mlx-swift) и CoreML.
+Модели ИИ для обработки речи на Apple Silicon, на базе MLX Swift и CoreML.
 
-Soniqo (speech-swift) — это библиотека с открытым исходным кодом на Swift для запуска моделей обработки речи нативно на Apple Silicon (M1/M2/M3/M4). Она обеспечивает распознавание речи (ASR), синтез речи из текста (TTS), генерацию речи из речи, обнаружение голосовой активности (VAD), диаризацию спикеров, извлечение голосовых эмбеддингов, улучшение качества речи и локальный чат на базе LLM — всё работает локально на Mac и iOS с использованием MLX для GPU-ускорения через Metal и CoreML для Neural Engine. Никаких облачных API, никаких ключей, никакие данные не покидают устройство. [Установите через Homebrew](#homebrew) или добавьте как зависимость Swift Package.
+📖 Read in: [English](README.md) · [中文](README_zh.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Español](README_es.md) · [Deutsch](README_de.md) · [Français](README_fr.md) · [हिन्दी](README_hi.md) · [Português](README_pt.md) · [Русский](README_ru.md)
 
-**[Документация](https://soniqo.audio)** · **[Модели](https://huggingface.co/aufklarer)** · **[Блог](https://blog.ivan.digital)**
+Распознавание, синтез и понимание речи на устройстве для Mac и iOS. Работает полностью локально на Apple Silicon — без облака, без API-ключей, данные не покидают устройство.
+
+[Установите через Homebrew](#homebrew) или добавьте как зависимость Swift Package.
+
+**[Документация](https://soniqo.audio)** · **[Модели на HuggingFace](https://huggingface.co/aufklarer)** · **[Блог](https://blog.ivan.digital)**
 
 - **Qwen3-ASR** — Распознавание речи (автоматическое распознавание речи, 52 языка)
 - **Parakeet TDT** — Распознавание речи через CoreML (Neural Engine, NVIDIA FastConformer + TDT-декодер, 25 языков)

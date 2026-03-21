@@ -1,12 +1,14 @@
-[English](README.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Español](README_es.md) | [Deutsch](README_de.md) | [Français](README_fr.md) | **हिन्दी** | [Português](README_pt.md) | [Русский](README_ru.md)
-
 # Speech Swift
 
-Apple Silicon के लिए AI स्पीच मॉडल, [MLX Swift](https://github.com/ml-explore/mlx-swift) और CoreML द्वारा संचालित।
+Apple Silicon के लिए AI स्पीच मॉडल, MLX Swift और CoreML द्वारा संचालित।
 
-Soniqo (speech-swift) एक ओपन-सोर्स Swift लाइब्रेरी है जो Apple Silicon (M1/M2/M3/M4) पर नेटिवली AI स्पीच मॉडल चलाती है। यह स्पीच रिकग्निशन (ASR), टेक्स्ट-टू-स्पीच सिंथेसिस (TTS), स्पीच-टू-स्पीच जनरेशन, वॉयस एक्टिविटी डिटेक्शन (VAD), स्पीकर डायराइज़ेशन, स्पीकर एम्बेडिंग, स्पीच एन्हांसमेंट, और ऑन-डिवाइस LLM चैट प्रदान करती है — सब कुछ Mac और iOS पर लोकली चलता है, MLX Metal GPU एक्सेलेरेशन और CoreML Neural Engine का उपयोग करके। कोई क्लाउड API नहीं, कोई API key नहीं, कोई डेटा डिवाइस से बाहर नहीं जाता। [Homebrew से इंस्टॉल करें](#homebrew) या Swift Package डिपेंडेंसी के रूप में जोड़ें।
+📖 Read in: [English](README.md) · [中文](README_zh.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Español](README_es.md) · [Deutsch](README_de.md) · [Français](README_fr.md) · [हिन्दी](README_hi.md) · [Português](README_pt.md) · [Русский](README_ru.md)
 
-**[डॉक्यूमेंटेशन](https://soniqo.audio)** · **[मॉडल](https://huggingface.co/aufklarer)** · **[ब्लॉग](https://blog.ivan.digital)**
+Mac और iOS के लिए ऑन-डिवाइस स्पीच रिकग्निशन, सिंथेसिस और समझ। Apple Silicon पर पूरी तरह लोकली चलता है — कोई क्लाउड नहीं, कोई API key नहीं, कोई डेटा डिवाइस से बाहर नहीं जाता।
+
+[Homebrew से इंस्टॉल करें](#homebrew) या Swift Package डिपेंडेंसी के रूप में जोड़ें।
+
+**[डॉक्यूमेंटेशन](https://soniqo.audio)** · **[HuggingFace मॉडल](https://huggingface.co/aufklarer)** · **[ब्लॉग](https://blog.ivan.digital)**
 
 - **Qwen3-ASR** — स्पीच-टू-टेक्स्ट / स्पीच रिकग्निशन (ऑटोमैटिक स्पीच रिकग्निशन, 52 भाषाएँ)
 - **Parakeet TDT** — CoreML के माध्यम से स्पीच-टू-टेक्स्ट (Neural Engine, NVIDIA FastConformer + TDT decoder, 25 भाषाएँ)

@@ -1,12 +1,14 @@
-[English](README.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Español](README_es.md) | **Deutsch** | [Français](README_fr.md) | [हिन्दी](README_hi.md) | [Português](README_pt.md) | [Русский](README_ru.md)
-
 # Speech Swift
 
-KI-Sprachmodelle für Apple Silicon, basierend auf [MLX Swift](https://github.com/ml-explore/mlx-swift) und CoreML.
+KI-Sprachmodelle für Apple Silicon, basierend auf MLX Swift und CoreML.
 
-Soniqo (speech-swift) ist eine quelloffene Swift-Bibliothek zur nativen Ausführung von KI-Sprachmodellen auf Apple Silicon (M1/M2/M3/M4). Sie bietet Spracherkennung (ASR), Sprachsynthese (TTS), Sprache-zu-Sprache-Generierung, Sprachaktivitätserkennung (VAD), Sprecherdiarisierung, Sprechereinbettungen, Sprachverbesserung und lokalen LLM-Chat — alles lokal auf Mac und iOS mit MLX für Metal-GPU-Beschleunigung und CoreML für die Neural Engine. Keine Cloud-APIs, keine API-Schlüssel, keine Daten verlassen das Gerät. [Installation über Homebrew](#homebrew) oder als Swift-Package-Abhängigkeit.
+📖 Read in: [English](README.md) · [中文](README_zh.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Español](README_es.md) · [Deutsch](README_de.md) · [Français](README_fr.md) · [हिन्दी](README_hi.md) · [Português](README_pt.md) · [Русский](README_ru.md)
 
-**[Dokumentation](https://soniqo.audio)** · **[Modelle](https://huggingface.co/aufklarer)** · **[Blog](https://blog.ivan.digital)**
+Spracherkennung, -synthese und -verständnis auf dem Gerät für Mac und iOS. Läuft vollständig lokal auf Apple Silicon — keine Cloud, keine API-Schlüssel, keine Daten verlassen das Gerät.
+
+[Installation über Homebrew](#homebrew) oder als Swift-Package-Abhängigkeit.
+
+**[Dokumentation](https://soniqo.audio)** · **[HuggingFace-Modelle](https://huggingface.co/aufklarer)** · **[Blog](https://blog.ivan.digital)**
 
 - **Qwen3-ASR** — Sprache-zu-Text / Spracherkennung (automatische Spracherkennung, 52 Sprachen)
 - **Parakeet TDT** — Sprache-zu-Text über CoreML (Neural Engine, NVIDIA FastConformer + TDT-Decoder, 25 Sprachen)

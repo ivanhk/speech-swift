@@ -1,12 +1,14 @@
-[English](README.md) | [中文](README_zh.md) | [日本語](README_ja.md) | **한국어** | [Español](README_es.md) | [Deutsch](README_de.md) | [Français](README_fr.md) | [हिन्दी](README_hi.md) | [Português](README_pt.md) | [Русский](README_ru.md)
-
 # Speech Swift
 
-[MLX Swift](https://github.com/ml-explore/mlx-swift)와 CoreML 기반의 Apple Silicon용 AI 음성 모델.
+MLX Swift와 CoreML 기반의 Apple Silicon용 AI 음성 모델.
 
-Soniqo (speech-swift)는 Apple Silicon (M1/M2/M3/M4)에서 AI 음성 모델을 네이티브로 실행하기 위한 오픈소스 Swift 라이브러리입니다. 음성 인식(ASR), 텍스트-음성 변환(TTS), 음성-음성 생성, 음성 활동 감지(VAD), 화자 분리, 화자 임베딩, 음성 향상, 온디바이스 LLM 채팅을 제공하며 — 모든 기능이 MLX를 통한 Metal GPU 가속과 CoreML을 통한 Neural Engine으로 Mac과 iOS에서 로컬로 실행됩니다. 클라우드 API 없이, API 키 없이, 데이터가 기기 밖으로 나가지 않습니다. [Homebrew로 설치](#homebrew)하거나 Swift Package 의존성으로 추가하세요.
+📖 Read in: [English](README.md) · [中文](README_zh.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Español](README_es.md) · [Deutsch](README_de.md) · [Français](README_fr.md) · [हिन्दी](README_hi.md) · [Português](README_pt.md) · [Русский](README_ru.md)
 
-**[문서](https://soniqo.audio)** · **[모델](https://huggingface.co/aufklarer)** · **[블로그](https://blog.ivan.digital)**
+Mac과 iOS를 위한 온디바이스 음성 인식, 합성 및 이해. Apple Silicon에서 완전히 로컬로 실행 — 클라우드 없이, API 키 없이, 데이터가 기기 밖으로 나가지 않습니다.
+
+[Homebrew로 설치](#homebrew)하거나 Swift Package 의존성으로 추가하세요.
+
+**[문서](https://soniqo.audio)** · **[HuggingFace 모델](https://huggingface.co/aufklarer)** · **[블로그](https://blog.ivan.digital)**
 
 - **Qwen3-ASR** — 음성-텍스트 변환 / 음성 인식 (자동 음성 인식, 52개 언어)
 - **Parakeet TDT** — CoreML을 통한 음성-텍스트 변환 (Neural Engine, NVIDIA FastConformer + TDT 디코더, 25개 언어)

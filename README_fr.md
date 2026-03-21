@@ -1,12 +1,14 @@
-[English](README.md) | [中文](README_zh.md) | [日本語](README_ja.md) | [한국어](README_ko.md) | [Español](README_es.md) | [Deutsch](README_de.md) | **Français** | [हिन्दी](README_hi.md) | [Português](README_pt.md) | [Русский](README_ru.md)
-
 # Speech Swift
 
-Modeles IA de parole pour Apple Silicon, propulses par [MLX Swift](https://github.com/ml-explore/mlx-swift) et CoreML.
+Modeles IA de parole pour Apple Silicon, propulses par MLX Swift et CoreML.
 
-Soniqo (speech-swift) est une bibliotheque Swift open source pour executer des modeles IA de parole nativement sur Apple Silicon (M1/M2/M3/M4). Elle offre la reconnaissance vocale (ASR), la synthese vocale (TTS), la generation parole-a-parole, la detection d'activite vocale (VAD), la diarisation de locuteurs, les empreintes vocales, l'amelioration de la parole et le chat LLM embarque -- le tout en local sur Mac et iOS grace a MLX pour l'acceleration GPU Metal et CoreML pour le Neural Engine. Aucune API cloud, aucune cle API, aucune donnee ne quitte l'appareil. [Installation via Homebrew](#homebrew) ou ajout en tant que dependance Swift Package.
+📖 Read in: [English](README.md) · [中文](README_zh.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Español](README_es.md) · [Deutsch](README_de.md) · [Français](README_fr.md) · [हिन्दी](README_hi.md) · [Português](README_pt.md) · [Русский](README_ru.md)
 
-**[Documentation](https://soniqo.audio)** · **[Modeles](https://huggingface.co/aufklarer)** · **[Blog](https://blog.ivan.digital)**
+Reconnaissance, synthese et comprehension vocale embarquees pour Mac et iOS. S'execute entierement en local sur Apple Silicon — sans cloud, sans cle API, aucune donnee ne quitte l'appareil.
+
+[Installation via Homebrew](#homebrew) ou ajout en tant que dependance Swift Package.
+
+**[Documentation](https://soniqo.audio)** · **[Modeles HuggingFace](https://huggingface.co/aufklarer)** · **[Blog](https://blog.ivan.digital)**
 
 - **Qwen3-ASR** -- Reconnaissance vocale (reconnaissance automatique de la parole, 52 langues)
 - **Parakeet TDT** -- Reconnaissance vocale via CoreML (Neural Engine, NVIDIA FastConformer + decodeur TDT, 25 langues)
