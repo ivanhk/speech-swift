@@ -61,16 +61,16 @@ public final class CosyVoiceTTSModel {
         let model = CosyVoiceTTSModel(config: config)
 
         // Get cache directory
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
         // Download if needed (check both weights and tokenizer)
-        let needsWeights = !HuggingFaceDownloader.weightsExist(in: cacheDir)
+        let needsWeights = !ModelScopeDownloader.weightsExist(in: cacheDir)
         let needsTokenizer = !FileManager.default.fileExists(
             atPath: cacheDir.appendingPathComponent("vocab.json").path)
 
         if needsWeights || needsTokenizer {
             progressHandler?(0.0, "Downloading model files...")
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: modelId,
                 to: cacheDir,
                 additionalFiles: [

@@ -1583,10 +1583,10 @@ public extension Qwen3TTSModel {
         var detectedBits = TTSModelSize.detectBits(from: modelId)
 
         // Download main model weights
-        let mainCacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
-        if !HuggingFaceDownloader.weightsExist(in: mainCacheDir) {
+        let mainCacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
+        if !ModelScopeDownloader.weightsExist(in: mainCacheDir) {
             progressHandler?(0.1, "Downloading TTS model weights...")
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: modelId,
                 to: mainCacheDir,
                 additionalFiles: ["vocab.json", "merges.txt", "tokenizer_config.json"],
@@ -1596,10 +1596,10 @@ public extension Qwen3TTSModel {
         }
 
         // Download tokenizer/codec weights
-        let tokenizerCacheDir = try HuggingFaceDownloader.getCacheDirectory(for: tokenizerModelId)
-        if !HuggingFaceDownloader.weightsExist(in: tokenizerCacheDir) {
+        let tokenizerCacheDir = try ModelScopeDownloader.getCacheDirectory(for: tokenizerModelId)
+        if !ModelScopeDownloader.weightsExist(in: tokenizerCacheDir) {
             progressHandler?(0.4, "Downloading speech tokenizer...")
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: tokenizerModelId,
                 to: tokenizerCacheDir,
                 progressHandler: { progress in

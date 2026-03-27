@@ -68,9 +68,9 @@ public final class SortformerDiarizer {
     ) async throws -> SortformerDiarizer {
         progressHandler?(0.0, "Downloading Sortformer model...")
 
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
-        try await HuggingFaceDownloader.downloadWeights(
+        try await ModelScopeDownloader.downloadWeights(
             modelId: modelId,
             to: cacheDir,
             additionalFiles: ["Sortformer.mlmodelc/**", "config.json"],

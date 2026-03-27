@@ -121,8 +121,8 @@ public final class PyannoteDiarizationPipeline {
         progressHandler?(0.0, "Downloading segmentation model...")
 
         // Load segmentation model
-        let segCacheDir = try HuggingFaceDownloader.getCacheDirectory(for: segModelId)
-        try await HuggingFaceDownloader.downloadWeights(
+        let segCacheDir = try ModelScopeDownloader.getCacheDirectory(for: segModelId)
+        try await ModelScopeDownloader.downloadWeights(
             modelId: segModelId,
             to: segCacheDir,
             progressHandler: { progress in

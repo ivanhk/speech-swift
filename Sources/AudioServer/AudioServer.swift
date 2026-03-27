@@ -42,7 +42,7 @@ public struct AudioServer {
     }
 
     public func preloadModels() async throws {
-        _ = try await state.loadASR()
+        _ = try await state.loadASR(modelId: nil)
         _ = try await state.loadTTS()
         _ = try await state.loadPersonaPlex()
         _ = try await state.loadEnhancer()
@@ -70,7 +70,7 @@ public struct AudioServer {
             }
 
             let sampleRate = params.int("sample_rate") ?? 16000
-            let model = try await state.loadASR()
+            let model = try await state.loadASR(modelId: nil)
             let audio = try decodeWAVData(audioData, targetSampleRate: sampleRate)
             let text = model.transcribe(audio: audio, sampleRate: sampleRate)
 
@@ -173,6 +173,51 @@ public struct AudioServer {
                 body: .init(byteBuffer: .init(data: wavData)))
         }
 
+        router.post("/v1/audio/transcriptions") { request, _ in
+            let body = try await request.body.collect(upTo: 50 * 1024 * 1024)
+            let params = try RequestParams.parse(body, contentType: request.headers[.contentType])
+
+            guard let audioData = params.audioData else {
+                return errorResponse("Missing audio file", status: .badRequest)
+            }
+
+            let modelSpecifier = params.string("model")
+            let sampleRate = params.int("sample_rate") ?? 16000
+            let responseFormat = params.string("response_format") ?? "json"
+            let language = params.string("language")
+
+            let model = try await state.loadASR(modelId: modelSpecifier)
+            let audio = try decodeWAVData(audioData, targetSampleRate: sampleRate)
+            let text = model.transcribe(audio: audio, sampleRate: sampleRate, language: language)
+
+            switch responseFormat {
+            case "text":
+                return Response(
+                    status: .ok,
+                    headers: [.contentType: "text/plain; charset=utf-8"],
+                    body: .init(byteBuffer: .init(string: text)))
+            case "json", "verbose_json":
+                let duration = round(Double(audio.count) / Double(sampleRate) * 100) / 100
+                var result: [String: Any] = [
+                    "text": text,
+                    "task": "transcribe",
+                    "language": language ?? "unknown",
+                    "duration": duration
+                ]
+                if responseFormat == "verbose_json" {
+                    result["segments"] = [[
+                        "id": 0,
+                        "start": 0.0,
+                        "end": duration,
+                        "text": text
+                    ] as [String: Any]]
+                }
+                return jsonResponse(result)
+            default:
+                return jsonResponse(["text": text])
+            }
+        }
+
         return router
     }
 }
@@ -180,19 +225,35 @@ public struct AudioServer {
 // MARK: - Lazy Model State
 
 final class ModelState: @unchecked Sendable {
-    private var asr: Qwen3ASRModel?
+    private var asrModels: [String: Qwen3ASRModel] = [:]
     private var tts: Qwen3TTSModel?
     private var cosyvoice: CosyVoiceTTSModel?
     private var personaplex: PersonaPlexModel?
     private var enhancer: SpeechEnhancer?
     var spmDecoder: SentencePieceDecoder?
 
-    func loadASR() async throws -> Qwen3ASRModel {
-        if let m = asr { return m }
-        print("[server] Loading Qwen3-ASR...")
-        let m = try await Qwen3ASRModel.fromPretrained(progressHandler: logProgress)
-        asr = m
+    func loadASR(modelId: String? = nil) async throws -> Qwen3ASRModel {
+        let resolvedId = resolveASRModelId(modelId ?? "default")
+        if let m = asrModels[resolvedId] { return m }
+        print("[server] Loading ASR model: \(resolvedId)")
+        let m = try await Qwen3ASRModel.fromPretrained(modelId: resolvedId, progressHandler: logProgress)
+        asrModels[resolvedId] = m
         return m
+    }
+
+    private func resolveASRModelId(_ specifier: String) -> String {
+        switch specifier.lowercased() {
+        case "default", "whisper-1", "qwen3", "qwen3-asr-0.6b-4bit":
+            return "aufklarer/Qwen3-ASR-0.6B-MLX-4bit"
+        case "qwen3-asr-0.6b-8bit":
+            return "aufklarer/Qwen3-ASR-0.6B-MLX-8bit"
+        case "qwen3-asr-1.7b-4bit":
+            return "aufklarer/Qwen3-ASR-1.7B-MLX-4bit"
+        case "qwen3-asr-1.7b-8bit":
+            return "aufklarer/Qwen3-ASR-1.7B-MLX-8bit"
+        default:
+            return specifier.contains("/") ? specifier : "aufklarer/Qwen3-ASR-0.6B-MLX-4bit"
+        }
     }
 
     func loadTTS() async throws -> Qwen3TTSModel {
@@ -217,7 +278,7 @@ final class ModelState: @unchecked Sendable {
         let m = try await PersonaPlexModel.fromPretrained(progressHandler: logProgress)
         personaplex = m
         do {
-            let cacheDir = try HuggingFaceDownloader.getCacheDirectory(
+            let cacheDir = try ModelScopeDownloader.getCacheDirectory(
                 for: "aufklarer/PersonaPlex-7B-MLX-4bit")
             let spmPath = cacheDir.appendingPathComponent("tokenizer_spm_32k_3.model").path
             if FileManager.default.fileExists(atPath: spmPath) {
@@ -338,7 +399,7 @@ func handleRealtimeWS(
             // Transcribe: PCM16 24kHz → resample to 16kHz for ASR
             let floats = pcm16LEToFloat(audioData)
             let audio16k = resample(floats, from: session.inputSampleRate, to: 16000)
-            let model = try await state.loadASR()
+            let model = try await state.loadASR(modelId: nil)
             let text = model.transcribe(audio: audio16k, sampleRate: 16000)
 
             let responseId = UUID().uuidString
@@ -521,6 +582,10 @@ struct RequestParams {
     static func parse(_ body: ByteBuffer, contentType: String?) throws -> RequestParams {
         var params = RequestParams()
 
+        if let ct = contentType, ct.contains("multipart/form-data") {
+            return try parseMultipart(body, contentType: ct)
+        }
+
         if let ct = contentType, ct.contains("application/json") {
             let data = Data(buffer: body)
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -543,6 +608,59 @@ struct RequestParams {
             params.audioData = data
         }
         return params
+    }
+
+    static func parseMultipart(_ body: ByteBuffer, contentType: String) throws -> RequestParams {
+        var params = RequestParams()
+        let data = Data(buffer: body)
+
+        guard let boundaryRange = contentType.range(of: "boundary=") else {
+            return params
+        }
+        let boundary = String(contentType[boundaryRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+        let boundaryData = Data("--\(boundary)".utf8)
+
+        var offset = 0
+        while offset < data.count {
+            guard let partStart = data[offset...].range(of: boundaryData) else { break }
+            offset = partStart.upperBound
+
+            guard let headerEnd = data[offset...].range(of: Data("\r\n\r\n".utf8)) else { break }
+            let headerData = data[offset..<offset + headerEnd.lowerBound]
+            let header = String(data: headerData, encoding: .utf8) ?? ""
+            offset = offset + headerEnd.upperBound
+
+            guard let partEnd = data[offset...].range(of: Data("\r\n--\(boundary)".utf8)) else { break }
+            let contentData = data[offset..<partEnd.lowerBound]
+            offset = partEnd.upperBound
+
+            let name = extractMultipartName(from: header)
+            let filename = extractMultipartFilename(from: header)
+
+            if let name = name {
+                if filename != nil || name == "file" {
+                    params.audioData = contentData
+                } else if let text = String(data: contentData, encoding: .utf8) {
+                    params.fields[name] = text
+                }
+            }
+        }
+
+        return params
+    }
+
+    private static func extractMultipartName(from header: String) -> String? {
+        guard let nameRange = header.range(of: "name=\"") else { return nil }
+        let start = nameRange.upperBound
+        guard let endQuote = header[start...].firstIndex(of: "\"") else { return nil }
+        return String(header[start..<endQuote])
+    }
+
+    private static func extractMultipartFilename(from header: String) -> String? {
+        guard let filenameRange = header.range(of: "filename=\"") else { return nil }
+        let start = filenameRange.upperBound
+        guard let endQuote = header[start...].firstIndex(of: "\"") else { return nil }
+        return String(header[start..<endQuote])
     }
 }
 

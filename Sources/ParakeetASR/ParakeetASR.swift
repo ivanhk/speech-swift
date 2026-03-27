@@ -180,7 +180,7 @@ public class ParakeetASRModel {
         // Step 1: Get/create cache directory
         let cacheDir: URL
         do {
-            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
         } catch {
             throw AudioModelError.modelLoadFailed(
                 modelId: modelId, reason: "Failed to resolve cache directory", underlying: error)
@@ -189,7 +189,7 @@ public class ParakeetASRModel {
         // Step 2: Download model files (no preprocessor needed — mel is computed in Swift)
         progressHandler?(0.0, "Downloading model...")
         do {
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: modelId,
                 to: cacheDir,
                 additionalFiles: [

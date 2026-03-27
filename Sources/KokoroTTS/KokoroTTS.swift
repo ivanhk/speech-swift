@@ -196,7 +196,7 @@ public final class KokoroTTSModel {
 
         let cacheDir: URL
         do {
-            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
         } catch {
             throw AudioModelError.modelLoadFailed(
                 modelId: modelId, reason: "Failed to resolve cache directory", underlying: error)
@@ -207,7 +207,7 @@ public final class KokoroTTSModel {
         // — sufficient for short TTS and uses less memory than larger buckets.
         progressHandler?(0.0, "Downloading model...")
         do {
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: modelId,
                 to: cacheDir,
                 additionalFiles: [

@@ -69,11 +69,11 @@ public final class Qwen3ChatModel: @unchecked Sendable {
         computeUnits: MLComputeUnits = .all,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> Qwen3ChatModel {
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
         // Download model files
         progressHandler?(0.05, "Downloading model...")
-        try await HuggingFaceDownloader.downloadWeights(
+        try await ModelScopeDownloader.downloadWeights(
             modelId: modelId,
             to: cacheDir,
             additionalFiles: [

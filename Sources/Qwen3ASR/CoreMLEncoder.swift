@@ -48,10 +48,10 @@ public class CoreMLASREncoder {
         computeUnits: MLComputeUnits = .all,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> CoreMLASREncoder {
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
         progressHandler?(0.0, "Downloading CoreML encoder...")
-        try await HuggingFaceDownloader.downloadWeights(
+        try await ModelScopeDownloader.downloadWeights(
             modelId: modelId,
             to: cacheDir,
             additionalFiles: ["encoder.mlmodelc/**", "config.json"]

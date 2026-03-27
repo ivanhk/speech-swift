@@ -32,12 +32,12 @@ public final class CamPlusPlusSpeaker {
         modelId: String = CamPlusPlusSpeaker.defaultModelId,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> CamPlusPlusSpeaker {
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
         let modelURL = cacheDir.appendingPathComponent("CamPlusPlus.mlmodelc", isDirectory: true)
         if !FileManager.default.fileExists(atPath: modelURL.path) {
             progressHandler?(0.0, "Downloading CAM++ speaker model...")
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: modelId,
                 to: cacheDir,
                 additionalFiles: ["CamPlusPlus.mlmodelc/**"],

@@ -217,19 +217,19 @@ public class Qwen3ASRModel {
     }
 }
 
-// MARK: - Backward Compatibility (delegates to HuggingFaceDownloader)
+// MARK: - Backward Compatibility (delegates to ModelScopeDownloader)
 
 public extension Qwen3ASRModel {
     static func sanitizedCacheKey(for modelId: String) -> String {
-        HuggingFaceDownloader.sanitizedCacheKey(for: modelId)
+        ModelScopeDownloader.sanitizedCacheKey(for: modelId)
     }
 
     static func validatedRemoteFileName(_ file: String) throws -> String {
-        try HuggingFaceDownloader.validatedRemoteFileName(file)
+        try ModelScopeDownloader.validatedRemoteFileName(file)
     }
 
     static func validatedLocalPath(directory: URL, fileName: String) throws -> URL {
-        try HuggingFaceDownloader.validatedLocalPath(directory: directory, fileName: fileName)
+        try ModelScopeDownloader.validatedLocalPath(directory: directory, fileName: fileName)
     }
 }
 
@@ -313,11 +313,11 @@ public extension Qwen3ASRModel {
         let detectedBits = ASRModelSize.detectBits(from: modelId)
 
         // Get cache directory
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
         // Download weights and tokenizer files (skips files that already exist on disk)
         // Download is the slowest part — give it 0-80% of progress
-        try await HuggingFaceDownloader.downloadWeights(
+        try await ModelScopeDownloader.downloadWeights(
             modelId: modelId,
             to: cacheDir,
             additionalFiles: ["vocab.json", "merges.txt", "tokenizer_config.json"],

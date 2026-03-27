@@ -97,10 +97,10 @@ public class CoreMLTextDecoder {
         computeUnits: MLComputeUnits = .all,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> CoreMLTextDecoder {
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
         progressHandler?(0.0, "Downloading CoreML decoder...")
-        try await HuggingFaceDownloader.downloadWeights(
+        try await ModelScopeDownloader.downloadWeights(
             modelId: modelId,
             to: cacheDir,
             additionalFiles: [

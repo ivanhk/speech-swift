@@ -93,7 +93,7 @@ final class PersonaPlexViewModel {
             await Task.detached { m.warmUp() }.value
             let warmTime = CFAbsoluteTimeGetCurrent() - warmStart
 
-            let cacheDir = try HuggingFaceDownloader.getCacheDirectory(
+            let cacheDir = try ModelScopeDownloader.getCacheDirectory(
                 for: PersonaPlexModel.modelId8bit
             )
             let spmPath = cacheDir.appendingPathComponent("tokenizer_spm_32k_3.model").path

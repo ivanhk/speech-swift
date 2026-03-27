@@ -83,7 +83,7 @@ public final class PersonaPlexModel: Module {
         let voiceEmbeddings: MLXArray?
         let voiceCache: MLXArray?  // [1, 17, CT] ring buffer with voice prompt tokens
         do {
-            let modelDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            let modelDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
             let voiceDir = modelDir.appendingPathComponent("voices")
             let voiceFile = voiceDir.appendingPathComponent("\(voice.rawValue).safetensors")
             if FileManager.default.fileExists(atPath: voiceFile.path) {
@@ -572,7 +572,7 @@ public final class PersonaPlexModel: Module {
                     let voiceEmbeddings: MLXArray?
                     let voiceCache: MLXArray?
                     do {
-                        let modelDir = try HuggingFaceDownloader.getCacheDirectory(
+                        let modelDir = try ModelScopeDownloader.getCacheDirectory(
                             for: modelId)
                         let voiceFile = modelDir.appendingPathComponent("voices")
                             .appendingPathComponent("\(voice.rawValue).safetensors")
@@ -962,7 +962,7 @@ public final class PersonaPlexModel: Module {
                     let voiceEmbeddings: MLXArray?
                     let voiceCache: MLXArray?
                     do {
-                        let modelDir = try HuggingFaceDownloader.getCacheDirectory(
+                        let modelDir = try ModelScopeDownloader.getCacheDirectory(
                             for: "aufklarer/PersonaPlex-7B-MLX-4bit")
                         let voiceFile = modelDir.appendingPathComponent("voices")
                             .appendingPathComponent("\(voice.rawValue).safetensors")
@@ -1281,7 +1281,7 @@ public final class PersonaPlexModel: Module {
         let voiceEmbeddings: MLXArray?
         let voiceCache: MLXArray?
         do {
-            let modelDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            let modelDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
             let voiceDir = modelDir.appendingPathComponent("voices")
             let voiceFile = voiceDir.appendingPathComponent("\(voice.rawValue).safetensors")
             if FileManager.default.fileExists(atPath: voiceFile.path) {
@@ -1515,7 +1515,7 @@ public final class PersonaPlexModel: Module {
     ) async throws -> PersonaPlexModel {
         // Download weights first to get config
         progressHandler?(0.05, "Downloading PersonaPlex weights...")
-        let modelDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let modelDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
         let weightFiles = [
             "temporal.safetensors",
@@ -1527,7 +1527,7 @@ public final class PersonaPlexModel: Module {
             "config.json"
         ]
 
-        try await HuggingFaceDownloader.downloadWeights(
+        try await ModelScopeDownloader.downloadWeights(
             modelId: modelId,
             to: modelDir,
             additionalFiles: weightFiles

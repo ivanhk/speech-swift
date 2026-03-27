@@ -153,7 +153,7 @@ public struct RespondCommand: ParsableCommand {
             var spmDecoder: SentencePieceDecoder?
             if transcript || json {
                 do {
-                    let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+                    let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
                     let spmPath = cacheDir.appendingPathComponent("tokenizer_spm_32k_3.model").path
                     if FileManager.default.fileExists(atPath: spmPath) {
                         spmDecoder = try SentencePieceDecoder(modelPath: spmPath)

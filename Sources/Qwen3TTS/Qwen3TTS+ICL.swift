@@ -20,7 +20,7 @@ extension Qwen3TTSModel {
         let tts = try await Qwen3TTSModel.fromPretrained(
             modelId: modelId, progressHandler: progressHandler)
 
-        let weightsDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let weightsDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
         // Build encoder with same config as decoder
         let encoderConfig = tts.config.speechTokenizerDecoder

@@ -222,11 +222,11 @@ public extension Mimi {
         let model = Mimi(cfg: cfg)
 
         progressHandler?(0.1, "Downloading Mimi codec...")
-        let mimiDir = try HuggingFaceDownloader.getCacheDirectory(for: repoId)
+        let mimiDir = try ModelScopeDownloader.getCacheDirectory(for: repoId)
         let weightFile = mimiDir.appendingPathComponent(filename)
 
         if !FileManager.default.fileExists(atPath: weightFile.path) {
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: repoId,
                 to: mimiDir,
                 additionalFiles: [filename]

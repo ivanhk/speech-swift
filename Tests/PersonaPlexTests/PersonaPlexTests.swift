@@ -138,7 +138,7 @@ final class PersonaPlexTests: XCTestCase {
         let modelId = "aufklarer/PersonaPlex-7B-MLX-4bit"
         let cacheDir: URL
         do {
-            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
         } catch {
             throw XCTSkip("Cannot resolve cache directory")
         }
@@ -293,7 +293,7 @@ final class PersonaPlexTests: XCTestCase {
         let modelId = "aufklarer/PersonaPlex-7B-MLX-4bit"
         let cacheDir: URL
         do {
-            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
         } catch {
             throw XCTSkip("Cannot resolve cache directory")
         }
@@ -318,7 +318,7 @@ final class PersonaPlexTests: XCTestCase {
         let modelId = "aufklarer/PersonaPlex-7B-MLX-4bit"
         let cacheDir: URL
         do {
-            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
         } catch {
             throw XCTSkip("Cannot resolve cache directory")
         }

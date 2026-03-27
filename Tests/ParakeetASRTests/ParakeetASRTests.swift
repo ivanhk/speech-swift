@@ -108,7 +108,7 @@ final class ParakeetASRTests: XCTestCase {
         let modelId = ParakeetASRModel.defaultModelId
         let cacheDir: URL
         do {
-            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
         } catch {
             throw XCTSkip("Cannot resolve cache directory: \(error)")
         }
@@ -127,7 +127,7 @@ final class ParakeetASRTests: XCTestCase {
         let modelId = ParakeetASRModel.defaultModelId
         let cacheDir: URL
         do {
-            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
         } catch {
             throw XCTSkip("Cannot resolve cache directory: \(error)")
         }
@@ -159,7 +159,7 @@ final class ParakeetASRTests: XCTestCase {
         let modelId = ParakeetASRModel.defaultModelId
         let cacheDir: URL
         do {
-            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
         } catch {
             throw XCTSkip("Cannot resolve cache directory: \(error)")
         }
@@ -211,7 +211,7 @@ final class ParakeetASRTests: XCTestCase {
         let modelId = ParakeetASRModel.defaultModelId
         let cacheDir: URL
         do {
-            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
         } catch {
             throw XCTSkip("Cannot resolve cache directory: \(error)")
         }

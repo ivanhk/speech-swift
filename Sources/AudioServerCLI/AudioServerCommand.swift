@@ -33,6 +33,7 @@ struct AudioServerCommand: AsyncParsableCommand {
         print("  POST /speak          - Text-to-speech (JSON: {text, engine?, language?})")
         print("  POST /respond        - Speech-to-speech (WAV body, voice/max_steps via query)")
         print("  POST /enhance        - Speech enhancement (WAV body)")
+        print("  POST /v1/audio/transcriptions - OpenAI Whisper API (multipart/form-data)")
         print("  GET  /health         - Health check")
         print("  WS   /v1/realtime    - OpenAI Realtime API (JSON events, base64 PCM16 audio)")
 

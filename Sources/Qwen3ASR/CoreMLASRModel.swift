@@ -52,8 +52,8 @@ public class CoreMLASRModel {
 
         // Download tokenizer (80-90%)
         progressHandler?(0.8, "Loading tokenizer...")
-        let tokenizerDir = try HuggingFaceDownloader.getCacheDirectory(for: tokenizerModelId)
-        try await HuggingFaceDownloader.downloadWeights(
+        let tokenizerDir = try ModelScopeDownloader.getCacheDirectory(for: tokenizerModelId)
+        try await ModelScopeDownloader.downloadWeights(
             modelId: tokenizerModelId,
             to: tokenizerDir,
             additionalFiles: ["vocab.json", "merges.txt", "tokenizer_config.json"]

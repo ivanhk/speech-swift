@@ -103,11 +103,11 @@ public final class WeSpeakerModel {
 
         progressHandler?(0.0, "Downloading speaker embedding model...")
 
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: resolvedModelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: resolvedModelId)
 
         switch engine {
         case .mlx:
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: resolvedModelId,
                 to: cacheDir,
                 progressHandler: { progress in
@@ -125,7 +125,7 @@ public final class WeSpeakerModel {
 
         case .coreml:
             #if canImport(CoreML)
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: resolvedModelId,
                 to: cacheDir,
                 additionalFiles: ["wespeaker.mlmodelc/**", "config.json"],

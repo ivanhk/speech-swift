@@ -253,10 +253,10 @@ public extension Qwen3ForcedAligner {
     ) async throws -> Qwen3ForcedAligner {
         progressHandler?(0.0, "Downloading model...")
 
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
 
         // Download weights and tokenizer files
-        try await HuggingFaceDownloader.downloadWeights(
+        try await ModelScopeDownloader.downloadWeights(
             modelId: modelId,
             to: cacheDir,
             additionalFiles: ["vocab.json", "merges.txt", "tokenizer_config.json",

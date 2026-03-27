@@ -235,11 +235,11 @@ public final class SileroVADModel {
 
         progressHandler?(0.0, "Downloading model...")
 
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: resolvedModelId)
+        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: resolvedModelId)
 
         switch engine {
         case .mlx:
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: resolvedModelId,
                 to: cacheDir,
                 progressHandler: { progress in
@@ -257,7 +257,7 @@ public final class SileroVADModel {
 
         case .coreml:
             #if canImport(CoreML)
-            try await HuggingFaceDownloader.downloadWeights(
+            try await ModelScopeDownloader.downloadWeights(
                 modelId: resolvedModelId,
                 to: cacheDir,
                 additionalFiles: ["silero_vad.mlmodelc/**", "config.json"],
