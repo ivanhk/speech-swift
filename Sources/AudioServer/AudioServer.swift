@@ -611,28 +611,50 @@ struct RequestParams {
     }
 
     static func parseMultipart(_ body: ByteBuffer, contentType: String) throws -> RequestParams {
-        var params = RequestParams()
-        let data = Data(buffer: body)
+        try parseMultipart(Data(buffer: body), contentType: contentType)
+    }
 
-        guard let boundaryRange = contentType.range(of: "boundary=") else {
+    static func parseMultipart(_ data: Data, contentType: String) throws -> RequestParams {
+        var params = RequestParams()
+
+        guard let boundary = extractMultipartBoundary(from: contentType) else {
             return params
         }
-        let boundary = String(contentType[boundaryRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+
         let boundaryData = Data("--\(boundary)".utf8)
+        let partSeparator = Data("\r\n\r\n".utf8)
+        let nextBoundaryMarker = Data("\r\n--\(boundary)".utf8)
+        let lineBreak = Data("\r\n".utf8)
+        let closingSuffix = Data("--".utf8)
 
-        var offset = 0
-        while offset < data.count {
-            guard let partStart = data[offset...].range(of: boundaryData) else { break }
-            offset = partStart.upperBound
+        var offset = data.startIndex
+        while let boundaryRange = data[offset...].range(of: boundaryData) {
+            var partStart = boundaryRange.upperBound
 
-            guard let headerEnd = data[offset...].range(of: Data("\r\n\r\n".utf8)) else { break }
-            let headerData = data[offset..<offset + headerEnd.lowerBound]
+            if data[partStart...].starts(with: closingSuffix) {
+                break
+            }
+
+            guard data[partStart...].starts(with: lineBreak) else {
+                offset = boundaryRange.upperBound
+                continue
+            }
+            partStart += lineBreak.count
+
+            guard let nextBoundaryRange = data[partStart...].range(of: nextBoundaryMarker) else {
+                break
+            }
+
+            let partData = data[partStart..<nextBoundaryRange.lowerBound]
+            offset = nextBoundaryRange.lowerBound + lineBreak.count
+
+            guard let headerRange = partData.range(of: partSeparator) else {
+                continue
+            }
+
+            let headerData = Data(partData[..<headerRange.lowerBound])
+            let contentData = Data(partData[headerRange.upperBound...])
             let header = String(data: headerData, encoding: .utf8) ?? ""
-            offset = offset + headerEnd.upperBound
-
-            guard let partEnd = data[offset...].range(of: Data("\r\n--\(boundary)".utf8)) else { break }
-            let contentData = data[offset..<partEnd.lowerBound]
-            offset = partEnd.upperBound
 
             let name = extractMultipartName(from: header)
             let filename = extractMultipartFilename(from: header)
@@ -647,6 +669,25 @@ struct RequestParams {
         }
 
         return params
+    }
+
+    private static func extractMultipartBoundary(from contentType: String) -> String? {
+        for component in contentType.split(separator: ";", omittingEmptySubsequences: true) {
+            let trimmed = component.trimmingCharacters(in: .whitespacesAndNewlines)
+            let parts = trimmed.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+            guard parts.count == 2 else { continue }
+
+            let key = parts[0].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard key == "boundary" else { continue }
+
+            var boundary = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+            if boundary.hasPrefix("\""), boundary.hasSuffix("\""), boundary.count >= 2 {
+                boundary.removeFirst()
+                boundary.removeLast()
+            }
+            return boundary.isEmpty ? nil : boundary
+        }
+        return nil
     }
 
     private static func extractMultipartName(from header: String) -> String? {
