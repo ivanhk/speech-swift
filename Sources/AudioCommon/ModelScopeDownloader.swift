@@ -134,11 +134,7 @@ public enum ModelScopeDownloader {
     }
 
     private static func listModelFiles(modelId: String) async throws -> [String] {
-        let encodedModelId = modelId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? modelId
-        let listURLString = "\(baseURL)/\(encodedModelId)/repo?Revision=\(defaultRevision)"
-        guard let listURL = URL(string: listURLString) else {
-            throw DownloadError.failedToDownload("Invalid URL for model listing: \(modelId)")
-        }
+        let listURL = try makeListURL(modelId: modelId)
 
         var request = URLRequest(url: listURL)
         request.httpMethod = "GET"
@@ -168,13 +164,7 @@ public enum ModelScopeDownloader {
         filePath: String,
         to localURL: URL
     ) async throws {
-        let encodedModelId = modelId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? modelId
-        let encodedFilePath = filePath.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? filePath
-        let downloadURLString = "\(baseURL)/\(encodedModelId)/repo?Revision=\(defaultRevision)&FilePath=\(encodedFilePath)"
-
-        guard let downloadURL = URL(string: downloadURLString) else {
-            throw DownloadError.failedToDownload("Invalid download URL: \(modelId)/\(filePath)")
-        }
+        let downloadURL = try makeDownloadURL(modelId: modelId, filePath: filePath)
 
         var request = URLRequest(url: downloadURL)
         request.httpMethod = "GET"
@@ -204,5 +194,24 @@ public enum ModelScopeDownloader {
         }
 
         AudioLog.download.info("Downloaded \(filePath) to \(localURL.path)")
+    }
+
+    static func makeListURL(modelId: String) throws -> URL {
+        let encodedModelId = modelId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? modelId
+        let listURLString = "\(baseURL)/\(encodedModelId)/repo/files?Revision=\(defaultRevision)"
+        guard let listURL = URL(string: listURLString) else {
+            throw DownloadError.failedToDownload("Invalid URL for model listing: \(modelId)")
+        }
+        return listURL
+    }
+
+    static func makeDownloadURL(modelId: String, filePath: String) throws -> URL {
+        let encodedModelId = modelId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? modelId
+        let encodedFilePath = filePath.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? filePath
+        let downloadURLString = "\(baseURL)/\(encodedModelId)/repo?Revision=\(defaultRevision)&FilePath=\(encodedFilePath)"
+        guard let downloadURL = URL(string: downloadURLString) else {
+            throw DownloadError.failedToDownload("Invalid download URL: \(modelId)/\(filePath)")
+        }
+        return downloadURL
     }
 }
