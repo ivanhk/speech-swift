@@ -55,15 +55,31 @@ final class MultiCodeEmbedderModel {
 
 // MARK: - MLMultiArray helpers
 
-/// Add two MLMultiArrays element-wise. Both must be the same shape and FP16.
+/// Add two MLMultiArrays element-wise. Accumulates in FP32 internally, stores as FP16.
+/// Python coremltools returns FP32 arrays, so additions happen in FP32 naturally.
+/// Swift CoreML returns FP16, so we must explicitly upcast for correct accumulation.
+/// Add two MLMultiArrays element-wise. Accumulates in FP32, output matches input dtype.
 func addMLMultiArrays(_ a: MLMultiArray, _ b: MLMultiArray) -> MLMultiArray {
+    let channels = a.dataType == .float16
+        ? a.shape.map { $0.intValue }.reduce(1, *)
+        : a.shape.map { $0.intValue }.reduce(1, *)
     let count = a.shape.map { $0.intValue }.reduce(1, *)
-    let result = try! MLMultiArray(shape: a.shape, dataType: .float16)
-    let ap = a.dataPointer.assumingMemoryBound(to: Float16.self)
-    let bp = b.dataPointer.assumingMemoryBound(to: Float16.self)
-    let rp = result.dataPointer.assumingMemoryBound(to: Float16.self)
-    for i in 0..<count {
-        rp[i] = Float16(Float(ap[i]) + Float(bp[i]))
+    // Keep FP32 if either input is FP32
+    let outType: MLMultiArrayDataType = (a.dataType == .float32 || b.dataType == .float32) ? .float32 : .float16
+    let result = try! MLMultiArray(shape: [1, NSNumber(value: count), 1, 1], dataType: outType)
+
+    func readFloat(_ arr: MLMultiArray, _ idx: Int) -> Float {
+        arr.dataType == .float16
+            ? Float(arr.dataPointer.assumingMemoryBound(to: Float16.self)[idx])
+            : arr.dataPointer.assumingMemoryBound(to: Float.self)[idx]
+    }
+
+    if outType == .float32 {
+        let rp = result.dataPointer.assumingMemoryBound(to: Float.self)
+        for i in 0..<count { rp[i] = readFloat(a, i) + readFloat(b, i) }
+    } else {
+        let rp = result.dataPointer.assumingMemoryBound(to: Float16.self)
+        for i in 0..<count { rp[i] = Float16(readFloat(a, i) + readFloat(b, i)) }
     }
     return result
 }

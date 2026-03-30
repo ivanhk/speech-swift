@@ -75,20 +75,25 @@ enum TTSSampler {
             }
         }
 
-        // 8. Gumbel-max sampling: argmax(logits + Gumbel noise)
-        var maxVal: Float = -Float.infinity
-        var maxIdx = 0
+        // 8. Categorical sampling: softmax → cumulative → uniform threshold
+        // Matches Python's np.random.choice(p=probs)
+        let maxLogit = logits.max() ?? 0
+        var probs = [Float](repeating: 0, count: vocabSize)
+        var sumExp: Float = 0
         for i in 0..<vocabSize {
-            // Gumbel noise: -log(-log(U)) where U ~ Uniform(0, 1)
-            let u = Float.random(in: Float.leastNonzeroMagnitude..<1.0)
-            let gumbel = -log(-log(u))
-            let perturbed = logits[i] + gumbel
-            if perturbed > maxVal {
-                maxVal = perturbed
-                maxIdx = i
-            }
+            let e = exp(logits[i] - maxLogit)
+            probs[i] = e
+            sumExp += e
         }
-        return Int32(maxIdx)
+        for i in 0..<vocabSize { probs[i] /= sumExp }
+
+        let u = Float.random(in: 0..<1)
+        var cumulative: Float = 0
+        for i in 0..<vocabSize {
+            cumulative += probs[i]
+            if cumulative > u { return Int32(i) }
+        }
+        return Int32(vocabSize - 1)
     }
 
     /// Extract Float32 logits from an MLMultiArray.

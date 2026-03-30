@@ -70,9 +70,12 @@ public final class Qwen3TTSCoreMLModel {
             return try MLModel(contentsOf: url, configuration: cfg)
         }
 
-        model.textProjector = TextProjectorModel(model: try loadML("TextProjector"))
-        model.codeEmbedder = CodeEmbedderModel(model: try loadML("CodeEmbedder"))
-        model.multiCodeEmbedder = MultiCodeEmbedderModel(model: try loadML("MultiCodeEmbedder"))
+        // Embedders on CPU for FP32 precision (ANE returns FP16 which causes accumulation drift)
+        let cpuConfig = MLModelConfiguration()
+        cpuConfig.computeUnits = .cpuOnly
+        model.textProjector = TextProjectorModel(model: try loadML("TextProjector", cpuConfig))
+        model.codeEmbedder = CodeEmbedderModel(model: try loadML("CodeEmbedder", cpuConfig))
+        model.multiCodeEmbedder = MultiCodeEmbedderModel(model: try loadML("MultiCodeEmbedder", cpuConfig))
         model.codeDecoder = TalkerGenerator(model: try loadML("CodeDecoder"))
         model.multiCodeDecoder = MultiCodeDecoderCoreML(model: try loadML("MultiCodeDecoder", mcdConfig))
         model.speechDecoder = SpeechDecoderCoreML(model: try loadML("SpeechDecoder"))
@@ -87,21 +90,20 @@ public final class Qwen3TTSCoreMLModel {
             for i in 8..<min(256, data.count) { if data[i] == 0x0A { headerEnd = i + 1; break } }
             let floatData = data.subdata(in: headerEnd..<data.count)
             let count = floatData.count / 4
-            let result = try! MLMultiArray(shape: [1, NSNumber(value: count), 1, 1], dataType: .float16)
-            let dst = result.dataPointer.assumingMemoryBound(to: Float16.self)
+            // Keep FP32 to match Python pipeline (cast to FP16 happens at model input)
+            let result = try! MLMultiArray(shape: [1, NSNumber(value: count), 1, 1], dataType: .float32)
+            let dst = result.dataPointer.assumingMemoryBound(to: Float.self)
             floatData.withUnsafeBytes { raw in
                 let src = raw.bindMemory(to: Float.self)
-                for i in 0..<count { dst[i] = Float16(src[i]) }
+                for i in 0..<count { dst[i] = src[i] }
             }
             return result
         }
 
-        if let pad = loadNpy("tts_pad_embed") { model.ttsPadEmbed = pad }
-        else { model.ttsPadEmbed = ensureNCHW(try model.textProjector!.embed(151671), channels: 1024) }
-        if let bos = loadNpy("tts_bos_embed") { model.ttsBosEmbed = bos }
-        else { model.ttsBosEmbed = ensureNCHW(try model.textProjector!.embed(151672), channels: 1024) }
-        if let eos = loadNpy("tts_eos_embed") { model.ttsEosEmbed = eos }
-        else { model.ttsEosEmbed = ensureNCHW(try model.textProjector!.embed(151673), channels: 1024) }
+        // Load from npy (PyTorch FP32 precision, matches Python inference pipeline)
+        model.ttsPadEmbed = loadNpy("tts_pad_embed")
+        model.ttsBosEmbed = loadNpy("tts_bos_embed")
+        model.ttsEosEmbed = loadNpy("tts_eos_embed")
         model.speakerEmbedding = loadNpy("speaker_embedding")
 
         // Load tokenizer
@@ -159,6 +161,7 @@ public final class Qwen3TTSCoreMLModel {
         var allCodebooks = (0..<16).map { _ in [Int32]() }
         allCodebooks[0].append(nextToken)
         var generatedCB0 = [nextToken]
+        print("[CoreML] Prefill: \(prefillEmbeds.count) positions, first CB0=\(nextToken)")
 
         // MultiCodeDecoder: predict CB1-15 for first frame
         var cpTokens = try multiCodeDecoder.predict(
