@@ -211,6 +211,41 @@ final class E2EParakeetASRTests: XCTestCase {
         }
     }
 
+    func testGermanTranscription() async throws {
+        let model = try await loadParakeetModel()
+
+        guard let audioURL = Bundle.module.url(forResource: "test_audio_german", withExtension: "wav") else {
+            throw XCTSkip("test_audio_german.wav not found in test resources")
+        }
+
+        let audio = try AudioFileLoader.load(url: audioURL, targetSampleRate: 16000)
+        let result = try model.transcribeAudio(audio, sampleRate: 16000)
+
+        XCTAssertFalse(result.isEmpty, "German transcription should not be empty")
+        let lower = result.lowercased()
+        // Parakeet v3 supports 25 European languages including German
+        // TTS-generated audio — Parakeet should at least get "guten tag"
+        XCTAssertTrue(lower.contains("guten tag"), "Should contain 'guten tag', got: \(result)")
+        print("German transcription: \(result)")
+    }
+
+    // MARK: - Helpers
+
+    private func loadParakeetModel() async throws -> ParakeetASRModel {
+        let modelId = ParakeetASRModel.defaultModelId
+        let cacheDir: URL
+        do {
+            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        } catch {
+            throw XCTSkip("Cannot resolve cache directory: \(error)")
+        }
+        let encoderPath = cacheDir.appendingPathComponent("encoder.mlmodelc")
+        guard FileManager.default.fileExists(atPath: encoderPath.path) else {
+            throw XCTSkip("Parakeet model not cached at \(cacheDir.path)")
+        }
+        return try await ParakeetASRModel.fromPretrained(modelId: modelId)
+    }
+
     func testWarmup() async throws {
         let modelId = ParakeetASRModel.defaultModelId
         let cacheDir: URL
