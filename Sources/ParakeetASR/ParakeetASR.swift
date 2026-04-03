@@ -6,18 +6,15 @@ import AudioCommon
 ///
 /// Uses a FastConformer encoder with a Token-and-Duration Transducer (TDT) decoder.
 /// Mel preprocessing is done in Swift using Accelerate/vDSP. The encoder, decoder, and
-/// joint network run on CoreML with INT4-quantized encoder for Neural Engine acceleration.
+/// joint network run on CoreML with INT8-quantized encoder for Neural Engine acceleration.
 ///
 /// - Warning: This class is not thread-safe. Create separate instances for concurrent use.
 public class ParakeetASRModel {
     /// Model configuration.
     public let config: ParakeetConfig
 
-    /// Default HuggingFace model ID (INT4 quantized encoder).
-    public static let defaultModelId = "aufklarer/Parakeet-TDT-v3-CoreML-INT4"
-
-    /// INT8 quantized variant (higher accuracy, larger size).
-    public static let int8ModelId = "aufklarer/Parakeet-TDT-v3-CoreML-INT8"
+    /// Default HuggingFace model ID (INT8 quantized encoder).
+    public static let defaultModelId = "aufklarer/Parakeet-TDT-v3-CoreML-INT8"
 
     /// Whether the model is loaded and ready for inference.
     var _isLoaded = true

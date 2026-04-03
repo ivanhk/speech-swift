@@ -27,8 +27,7 @@ final class ParakeetASRTests: XCTestCase {
     }
 
     func testModelVariantConstants() {
-        XCTAssertEqual(ParakeetASRModel.defaultModelId, "aufklarer/Parakeet-TDT-v3-CoreML-INT4")
-        XCTAssertEqual(ParakeetASRModel.int8ModelId, "aufklarer/Parakeet-TDT-v3-CoreML-INT8")
+        XCTAssertEqual(ParakeetASRModel.defaultModelId, "aufklarer/Parakeet-TDT-v3-CoreML-INT8")
     }
 
     func testConfigCodable() throws {
@@ -101,7 +100,11 @@ final class ParakeetASRTests: XCTestCase {
         XCTAssertEqual(text, "")
     }
 
-    // MARK: - Integration Tests
+}
+
+// MARK: - E2E Tests (require model download)
+
+final class E2EParakeetASRTests: XCTestCase {
 
     func testModelLoading() async throws {
         // Skip if model is not cached locally
@@ -247,7 +250,11 @@ final class ParakeetASRTests: XCTestCase {
         print("Parakeet latency: avg=\(String(format: "%.0f", avg * 1000))ms, best=\(String(format: "%.0f", best * 1000))ms, RTF=\(String(format: "%.3f", rtf))")
     }
 
-    // MARK: - Mel Preprocessing Tests
+}
+
+// MARK: - Unit Tests (continued, no model download)
+
+final class ParakeetASRUnitTests: XCTestCase {
 
     func testMelNormalization() throws {
         let config = ParakeetConfig.default
