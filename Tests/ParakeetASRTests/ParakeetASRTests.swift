@@ -158,6 +158,59 @@ final class E2EParakeetASRTests: XCTestCase {
         XCTAssertTrue(lower.contains("shipped"), "Should contain 'shipped', got: \(result)")
     }
 
+    func testWordConfidenceFromRealAudio() async throws {
+        let modelId = ParakeetASRModel.defaultModelId
+        let cacheDir: URL
+        do {
+            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        } catch {
+            throw XCTSkip("Cannot resolve cache directory: \(error)")
+        }
+
+        let encoderPath = cacheDir.appendingPathComponent("encoder.mlmodelc")
+        guard FileManager.default.fileExists(atPath: encoderPath.path) else {
+            throw XCTSkip("Parakeet model not cached at \(cacheDir.path)")
+        }
+
+        let model = try await ParakeetASRModel.fromPretrained(modelId: modelId)
+
+        guard let audioURL = Bundle.module.url(forResource: "test_audio", withExtension: "wav") else {
+            throw XCTSkip("test_audio.wav not found in test resources")
+        }
+
+        let audio = try AudioFileLoader.load(url: audioURL, targetSampleRate: 16000)
+        let result = model.transcribeWithLanguage(audio: audio, sampleRate: 16000, language: nil)
+
+        // Verify overall confidence
+        XCTAssertGreaterThan(result.confidence, 0.5, "Overall confidence should be high for clean English audio")
+        XCTAssertLessThanOrEqual(result.confidence, 1.0, "Confidence must be <= 1.0")
+
+        // Verify per-word confidences exist
+        XCTAssertNotNil(result.words, "Should return per-word confidences")
+        guard let words = result.words else { return }
+
+        XCTAssertGreaterThan(words.count, 3, "Should have multiple words")
+        print("Word confidences:")
+        for w in words {
+            print("  \(w.word): \(String(format: "%.3f", w.confidence))")
+            // Each word confidence must be in [0, 1]
+            XCTAssertGreaterThanOrEqual(w.confidence, 0.0)
+            XCTAssertLessThanOrEqual(w.confidence, 1.0)
+        }
+
+        // Clean English audio should have mostly high-confidence words
+        let highConfWords = words.filter { $0.confidence > 0.5 }
+        XCTAssertGreaterThan(highConfWords.count, words.count / 2,
+            "Most words should have confidence > 0.5 for clean audio")
+
+        // Verify key words are present with reasonable confidence
+        let guaranteeWord = words.first { $0.word.lowercased().contains("guarantee") }
+        XCTAssertNotNil(guaranteeWord, "Should find 'guarantee' in word list")
+        if let g = guaranteeWord {
+            XCTAssertGreaterThan(g.confidence, 0.3, "'guarantee' should have decent confidence")
+        }
+    }
+
     func testWarmup() async throws {
         let modelId = ParakeetASRModel.defaultModelId
         let cacheDir: URL
