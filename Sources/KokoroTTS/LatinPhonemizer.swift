@@ -1,14 +1,13 @@
 import Foundation
 
-/// Grapheme-to-phoneme conversion for Latin-script languages (French, Spanish, Portuguese).
+/// Grapheme-to-phoneme conversion for Latin-script languages (French, Spanish, Portuguese, Italian, German).
 ///
 /// Rule-based orthography→IPA conversion. Each language has specific rules for
 /// digraphs, accent handling, and context-dependent pronunciation.
-/// No external dependencies — pure Swift string processing.
 final class LatinPhonemizer {
 
     enum Language {
-        case french, spanish, portuguese
+        case french, spanish, portuguese, italian, german
     }
 
     private let language: Language
@@ -78,6 +77,8 @@ final class LatinPhonemizer {
         case .french: return frenchToIPA(word)
         case .spanish: return spanishToIPA(word)
         case .portuguese: return portugueseToIPA(word)
+        case .italian: return italianToIPA(word)
+        case .german: return germanToIPA(word)
         }
     }
 
@@ -232,6 +233,105 @@ final class LatinPhonemizer {
             for len in stride(from: min(4, chars.count - i), through: 1, by: -1) {
                 let substr = String(chars[i..<i+len])
                 if let rule = Self.portugueseRules.first(where: { $0.pattern == substr }) {
+                    result += rule.ipa
+                    i += len
+                    matched = true
+                    break
+                }
+            }
+            if !matched {
+                result += String(chars[i])
+                i += 1
+            }
+        }
+
+        return result
+    }
+
+    // MARK: - Italian G2P
+
+    /// Italian is highly regular — nearly 1:1 grapheme-to-phoneme.
+    /// Main exceptions: c/g before e/i, gl, gn, sc digraphs.
+    private static let italianRules: [(pattern: String, ipa: String)] = [
+        // Trigraphs
+        ("gli", "ʎi"), ("sce", "ʃe"), ("sci", "ʃi"),
+        ("ghi", "ɡi"), ("ghe", "ɡe"), ("chi", "ki"), ("che", "ke"),
+        // Digraphs
+        ("gn", "ɲ"), ("gl", "ʎ"), ("sc", "sk"),
+        ("gh", "ɡ"), ("ch", "k"), ("qu", "kw"),
+        ("ci", "tʃi"), ("ce", "tʃe"),
+        ("gi", "dʒi"), ("ge", "dʒe"),
+        ("zz", "tːs"), ("ss", "sː"), ("rr", "rː"), ("ll", "lː"),
+        ("nn", "nː"), ("mm", "mː"), ("pp", "pː"), ("tt", "tː"),
+        ("cc", "kː"), ("ff", "fː"), ("bb", "bː"), ("dd", "dː"),
+        ("gg", "ɡː"),
+        // Accented vowels
+        ("à", "a"), ("è", "ɛ"), ("é", "e"), ("ì", "i"), ("ò", "ɔ"), ("ó", "o"), ("ù", "u"),
+        // Basic — Italian vowels are pure, consonants are straightforward
+        ("a", "a"), ("b", "b"), ("c", "k"), ("d", "d"), ("e", "e"),
+        ("f", "f"), ("g", "ɡ"), ("h", ""), ("i", "i"), ("j", "j"),
+        ("k", "k"), ("l", "l"), ("m", "m"), ("n", "n"), ("o", "o"),
+        ("p", "p"), ("r", "r"), ("s", "s"), ("t", "t"), ("u", "u"),
+        ("v", "v"), ("w", "w"), ("x", "ks"), ("y", "i"), ("z", "ts"),
+    ]
+
+    private func italianToIPA(_ word: String) -> String {
+        var result = ""
+        let chars = Array(word)
+        var i = 0
+
+        while i < chars.count {
+            var matched = false
+            for len in stride(from: min(3, chars.count - i), through: 1, by: -1) {
+                let substr = String(chars[i..<i+len])
+                if let rule = Self.italianRules.first(where: { $0.pattern == substr }) {
+                    result += rule.ipa
+                    i += len
+                    matched = true
+                    break
+                }
+            }
+            if !matched {
+                result += String(chars[i])
+                i += 1
+            }
+        }
+
+        return result
+    }
+
+    // MARK: - German G2P
+
+    private static let germanRules: [(pattern: String, ipa: String)] = [
+        // Trigraphs
+        ("sch", "ʃ"), ("tch", "tʃ"),
+        // Digraphs
+        ("ch", "x"), ("ck", "k"), ("ph", "f"), ("th", "t"),
+        ("sp", "ʃp"), ("st", "ʃt"),
+        ("ei", "ai"), ("eu", "ɔi"), ("äu", "ɔi"), ("au", "au"),
+        ("ie", "iː"), ("ee", "eː"), ("oo", "oː"),
+        ("pf", "pf"), ("qu", "kv"), ("ng", "ŋ"), ("nk", "ŋk"),
+        ("tz", "ts"), ("dt", "t"), ("ss", "s"),
+        // Accented / umlauts
+        ("ä", "ɛ"), ("ö", "ø"), ("ü", "y"), ("ß", "s"),
+        // Basic
+        ("a", "a"), ("b", "b"), ("c", "k"), ("d", "d"), ("e", "e"),
+        ("f", "f"), ("g", "ɡ"), ("h", "h"), ("i", "i"), ("j", "j"),
+        ("k", "k"), ("l", "l"), ("m", "m"), ("n", "n"), ("o", "o"),
+        ("p", "p"), ("r", "ʁ"), ("s", "z"), ("t", "t"), ("u", "u"),
+        ("v", "f"), ("w", "v"), ("x", "ks"), ("y", "y"), ("z", "ts"),
+    ]
+
+    private func germanToIPA(_ word: String) -> String {
+        var result = ""
+        let chars = Array(word)
+        var i = 0
+
+        while i < chars.count {
+            var matched = false
+            for len in stride(from: min(3, chars.count - i), through: 1, by: -1) {
+                let substr = String(chars[i..<i+len])
+                if let rule = Self.germanRules.first(where: { $0.pattern == substr }) {
                     result += rule.ipa
                     i += len
                     matched = true

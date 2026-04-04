@@ -139,6 +139,8 @@ public final class KokoroPhonemizer {
     private lazy var frenchPhonemizer = LatinPhonemizer(language: .french)
     private lazy var spanishPhonemizer = LatinPhonemizer(language: .spanish)
     private lazy var portuguesePhonemizer = LatinPhonemizer(language: .portuguese)
+    private lazy var italianPhonemizer = LatinPhonemizer(language: .italian)
+    private lazy var germanPhonemizer = LatinPhonemizer(language: .german)
 
     // MARK: - Tokenization
 
@@ -160,6 +162,10 @@ public final class KokoroPhonemizer {
             phonemes = spanishPhonemizer.phonemize(text)
         case "pt", "portuguese":
             phonemes = portuguesePhonemizer.phonemize(text)
+        case "it", "italian":
+            phonemes = italianPhonemizer.phonemize(text)
+        case "de", "german":
+            phonemes = germanPhonemizer.phonemize(text)
         default:
             phonemes = textToPhonemes(text)
         }
