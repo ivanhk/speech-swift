@@ -2,14 +2,11 @@ import CoreML
 import Foundation
 import NaturalLanguage
 
-/// GPL-free phonemizer for Kokoro TTS.
+/// Multilingual phonemizer for Kokoro TTS.
 ///
-/// Three-tier approach (all Apache-2.0 / BSD compatible):
-/// 1. **Dictionary lookup** — gold + silver IPA pronunciation dictionaries
-/// 2. **Suffix stemming** — strips -s/-ed/-ing, looks up stem, applies phonological rules
-/// 3. **CoreML BART G2P** — encoder-decoder neural model for OOV words (Apache-2.0)
-///
-/// No eSpeak-NG dependency. Fully Apache-2.0 compatible.
+/// English: dictionary lookup → suffix stemming → CoreML BART G2P fallback.
+/// Chinese/Japanese/Italian: dedicated language-specific phonemizers.
+/// French/Spanish/Portuguese/Hindi: pronunciation dictionary + rule-based G2P.
 public final class KokoroPhonemizer {
 
     /// IPA symbol → token ID mapping (from vocab_index.json).
