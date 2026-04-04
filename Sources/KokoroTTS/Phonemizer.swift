@@ -154,18 +154,13 @@ public final class KokoroPhonemizer {
             phonemes = japanesePhonemizer.phonemize(text)
         case "it", "italian":
             phonemes = italianPhonemizer.phonemize(text)
-        case "fr", "french":
-            phonemes = frenchPhonemizer.phonemize(text)
         case "es", "spanish":
             phonemes = spanishPhonemizer.phonemize(text)
-        case "pt", "portuguese":
-            phonemes = portuguesePhonemizer.phonemize(text)
-        case "de", "german":
-            phonemes = germanPhonemizer.phonemize(text)
-        case "ko", "korean":
-            phonemes = koreanPhonemizer.phonemize(text)
-        case "hi", "hindi":
-            phonemes = hindiPhonemizer.phonemize(text)
+        // French, Portuguese, Hindi, Korean, German: use English phonemizer (dictionary
+        // + BART G2P). The G2P model produces stress-marked IPA that Kokoro's duration
+        // model handles well, even with English-accented pronunciation. Our rule-based
+        // phonemizers produce correct IPA but too-short token sequences that result in
+        // rushed/garbled audio.
         default:
             phonemes = textToPhonemes(text)
         }

@@ -73,7 +73,7 @@ final class LatinPhonemizer {
     // MARK: - Word Conversion
 
     private func convertWord(_ word: String) -> String {
-        let ipa: String
+        var ipa: String
         switch language {
         case .french: ipa = frenchToIPA(word)
         case .spanish: ipa = spanishToIPA(word)
@@ -81,13 +81,32 @@ final class LatinPhonemizer {
         case .italian: ipa = italianToIPA(word)
         case .german: ipa = germanToIPA(word)
         }
+
+        // Apply E2M mappings to match Kokoro's training format.
+        // Kokoro was trained with espeak-ng output post-processed by misaki.
+        // These replace multi-char IPA sequences with single-char equivalents.
+        for (from, to) in Self.e2mMappings {
+            ipa = ipa.replacingOccurrences(of: from, with: to)
+        }
+
         // Add primary stress mark for multi-syllable words.
-        // Kokoro's duration model expects ˈ markers (espeak-ng convention).
         if ipa.count >= 4 {
             return "ˈ" + ipa
         }
         return ipa
     }
+
+    // MARK: - E2M Post-Processing (Kokoro Training Format)
+
+    /// Mappings from standard IPA to Kokoro's internal format.
+    /// Sorted longest-first for correct greedy replacement.
+    private static let e2mMappings: [(from: String, to: String)] = [
+        // Affricates → ligatures (multi-char to single)
+        ("dʒ", "ʤ"), ("tʃ", "ʧ"), ("dz", "ʣ"),
+        // Consonant normalizations
+        ("ʁ", "ɹ"),     // French/German uvular → alveolar approximant
+        ("ɐ", "ə"),     // Near-open central → schwa
+    ]
 
     // MARK: - French G2P
 

@@ -3,5 +3,3 @@ builder:
   configs:
     - platform: ios
       scheme: KokoroTTS
-    - platform: macos
-      scheme: Qwen3Speech-Package
