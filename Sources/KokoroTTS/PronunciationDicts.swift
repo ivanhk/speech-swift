@@ -52,6 +52,15 @@ enum PronunciationDicts {
         "venir": "vənˈiʁ", "vert": "vˈɛʁ", "vie": "vˈi", "ville": "vˈil",
         "vin": "vˈɛ̃", "voir": "vwˈaʁ", "votre": "vˈotʁ", "vouloir": "vulwˈaʁ",
         "vous": "vˈu", "yeux": "jˈø", "école": "ekˈɔl", "être": "ˈɛtʁ",
+        // Additional common words
+        "après": "apʁˈɛ", "alors": "alˈɔʁ", "comme": "kˈɔm", "contre": "kˈɔ̃tʁ",
+        "chez": "ʃˈe", "depuis": "dəpyˈi", "déjà": "deʒˈa", "ensuite": "ɑ̃syˈit",
+        "entre": "ˈɑ̃tʁ", "message": "mɛsˈaʒ", "pendant": "pɑ̃dˈɑ̃",
+        "peut": "pˈø", "premier": "pʁəmjˈe", "quoi": "kwˈa", "rien": "ʁiˈɛ̃",
+        "sans": "sˈɑ̃", "sera": "səʁˈa", "seulement": "sølmˈɑ̃",
+        "sommes": "sˈɔm", "sous": "sˈu", "suis": "syˈi", "toujours": "tuʒˈuʁ",
+        "vers": "vˈɛʁ", "avait": "avˈɛ", "avez": "avˈe", "avons": "avˈɔ̃",
+        "était": "etˈɛ", "êtes": "ˈɛt",
     ]
 
     // MARK: - Spanish (125 entries)
@@ -127,6 +136,13 @@ enum PronunciationDicts {
         "um": "ˈũŋ", "uma": "ˈumɐ", "velho": "vˈɛʎʊ", "ver": "vˈeɹ",
         "verde": "vˈeɾədɨ", "vermelho": "vˌeɾəmˈeʎʊ", "vida": "vˈidɐ",
         "vinho": "vˈiɲʊ", "você": "vosˈe", "água": "ˈaɡwɐ",
+        // Additional common words
+        "é": "ˈɛ", "boa": "bˈoɐ", "dia": "dˈiɐ", "tarde": "tˈaɾədɨ",
+        "noite": "nˈoɪtɨ", "nome": "nˈomɨ", "tudo": "tˈudʊ", "nada": "nˈadɐ",
+        "hoje": "ˈoʒɨ", "amanhã": "ɐmɐ̃ɲˈɐ̃", "ontem": "ˈoŋteɪŋ",
+        "senhor": "sɨɲˈoɹ", "senhora": "sˌeɲˈoɾɐ", "favor": "fɐvˈoɹ",
+        "obrigada": "ˌɔbɹiɡˈadɐ", "comer": "kumˈeɹ", "beber": "bɨbˈeɹ",
+        "falar": "fɐlˈaɹ", "gostar": "ɡuʃtˈaɹ", "precisar": "pɹˌɨsizˈaɹ",
     ]
 
     // MARK: - Hindi (60 entries)
