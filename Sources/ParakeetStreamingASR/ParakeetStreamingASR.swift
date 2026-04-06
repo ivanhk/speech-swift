@@ -129,7 +129,7 @@ public class ParakeetStreamingASRModel {
         }
 
         let session = try createSession()
-        session.useRunningNormalization = false  // Batch: use whole-utterance normalization
+        // EOU model was trained with normalize: "NA" — no normalization needed
         // Collect all partials — EOU may fire during pushAudio, clearing allTokens
         var allPartials = try session.pushAudio(samples)
         allPartials.append(contentsOf: try session.finalize())

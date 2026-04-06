@@ -17,10 +17,11 @@ public class StreamingSession {
     private let rnntDecoder: RNNTGreedyDecoder
 
     // Encoder cache state
-    private var preCache: MLMultiArray
     private var cacheLastChannel: MLMultiArray
     private var cacheLastTime: MLMultiArray
     private var cacheLastChannelLen: MLMultiArray
+    // Pre-encode mel cache: last preCacheSize mel frames from previous chunk
+    private var preEncodeMelCache: [Float]
 
     // Decoder LSTM state
     private var h: MLMultiArray
@@ -62,12 +63,11 @@ public class StreamingSession {
         let hidden = config.encoderHidden
         let attCtx = config.attentionContext
         let convCache = config.convCacheSize
-        let preCacheSize = config.streaming.preCacheSize
 
-        preCache = try MLMultiArray(
-            shape: [1, config.numMelBins as NSNumber, preCacheSize as NSNumber], dataType: .float32)
-        memset(preCache.dataPointer, 0,
-               config.numMelBins * preCacheSize * MemoryLayout<Float>.stride)
+        // Pre-encode mel cache: zeros for first chunk
+        preEncodeMelCache = [Float](repeating: 0,
+            count: config.numMelBins * config.streaming.preCacheSize)
+
         cacheLastChannel = try MLMultiArray(
             shape: [layers, 1, attCtx, hidden] as [NSNumber], dataType: .float32)
         cacheLastTime = try MLMultiArray(
@@ -186,6 +186,7 @@ public class StreamingSession {
     public var melRunningCount: Int { melPreprocessor.runningCount }
 
     private func processChunk(_ audio: [Float]) throws -> ParakeetStreamingASRModel.PartialTranscript? {
+        // Extract mel — no normalization for streaming (model trained with normalize: "NA")
         let (rawMel, melLength): (MLMultiArray, Int)
         if useRunningNormalization {
             (rawMel, melLength) = try melPreprocessor.extractRaw(audio)
@@ -194,23 +195,30 @@ public class StreamingSession {
         }
         guard melLength > 0 else { return nil }
 
-        // Truncate/pad mel to exact expected frame count (encoder has fixed input shape)
+        // Truncate/pad chunk mel to exact expected frame count
         let expectedFrames = config.streaming.melFrames
         let actualMelFrames = rawMel.shape[2].intValue
-        let mel: MLMultiArray
+        let chunkMel: MLMultiArray
         if actualMelFrames > expectedFrames {
-            mel = try truncateMel(rawMel, to: expectedFrames)
+            chunkMel = try truncateMel(rawMel, to: expectedFrames)
         } else if actualMelFrames < expectedFrames {
-            mel = try padMel(rawMel, actualLength: actualMelFrames, targetLength: expectedFrames)
+            chunkMel = try padMel(rawMel, actualLength: actualMelFrames, targetLength: expectedFrames)
         } else {
-            mel = rawMel
+            chunkMel = rawMel
         }
 
-        // Run cache-aware encoder (with pre_cache for mel subsampling context)
+        // Prepend pre-encode mel cache to chunk mel for encoder input
+        let preCacheSize = config.streaming.preCacheSize
+        let totalFrames = preCacheSize + expectedFrames
+        let mel = try prependMelCache(chunkMel, expectedFrames: expectedFrames, totalFrames: totalFrames)
+
+        // Save last preCacheSize frames of chunk mel for next iteration
+        savePreEncodeMelCache(from: chunkMel, frames: expectedFrames)
+
+        // Run cache-aware encoder
         let encoderInput = try MLDictionaryFeatureProvider(dictionary: [
             "audio_signal": MLFeatureValue(multiArray: mel),
-            "audio_length": MLFeatureValue(multiArray: makeInt32Array(value: Int32(melLength))),
-            "pre_cache": MLFeatureValue(multiArray: preCache),
+            "audio_length": MLFeatureValue(multiArray: makeInt32Array(value: Int32(expectedFrames))),
             "cache_last_channel": MLFeatureValue(multiArray: cacheLastChannel),
             "cache_last_time": MLFeatureValue(multiArray: cacheLastTime),
             "cache_last_channel_len": MLFeatureValue(multiArray: cacheLastChannelLen),
@@ -289,18 +297,19 @@ public class StreamingSession {
         )
     }
 
-    /// Full reset after EOU: zero encoder caches, reset decoder LSTM, clear tokens.
-    /// This matches NeMo and FluidAudio behavior — each utterance starts fresh.
+    /// Full reset after EOU: zero encoder caches, reset decoder, clear tokens.
+    /// Each utterance starts with fresh state.
     private func resetForNextUtterance() {
         let layers = config.encoderLayers
         let hidden = config.encoderHidden
         let attCtx = config.attentionContext
         let convCache = config.convCacheSize
-        let preCacheSize = config.streaming.preCacheSize
+
+        // Zero pre-encode mel cache
+        preEncodeMelCache = [Float](repeating: 0,
+            count: config.numMelBins * config.streaming.preCacheSize)
 
         // Zero encoder caches
-        memset(preCache.dataPointer, 0,
-               config.numMelBins * preCacheSize * MemoryLayout<Float>.stride)
         memset(cacheLastChannel.dataPointer, 0,
                layers * attCtx * hidden * MemoryLayout<Float>.stride)
         memset(cacheLastTime.dataPointer, 0,
@@ -328,6 +337,54 @@ public class StreamingSession {
         segmentIndex += 1
         eouDetected = false
         sampleBuffer.removeAll()
+    }
+
+    // MARK: - Pre-encode Mel Cache
+
+    /// Prepend pre-encode mel cache to chunk mel, creating [1, 128, totalFrames].
+    private func prependMelCache(_ chunkMel: MLMultiArray, expectedFrames: Int, totalFrames: Int) throws -> MLMultiArray {
+        let numBins = config.numMelBins
+        let preCacheSize = config.streaming.preCacheSize
+        let mel = try MLMultiArray(
+            shape: [1, numBins as NSNumber, totalFrames as NSNumber], dataType: .float32)
+        let dst = mel.dataPointer.assumingMemoryBound(to: Float.self)
+        let src = chunkMel.dataPointer.assumingMemoryBound(to: Float.self)
+
+        for bin in 0..<numBins {
+            let dstOffset = bin * totalFrames
+            let cacheOffset = bin * preCacheSize
+            let srcOffset = bin * expectedFrames
+
+            // Copy pre-encode cache (preCacheSize frames)
+            memcpy(dst.advanced(by: dstOffset),
+                   preEncodeMelCache.withUnsafeBufferPointer { $0.baseAddress! }.advanced(by: cacheOffset),
+                   preCacheSize * MemoryLayout<Float>.stride)
+
+            // Copy chunk mel (expectedFrames frames)
+            memcpy(dst.advanced(by: dstOffset + preCacheSize),
+                   src.advanced(by: srcOffset),
+                   expectedFrames * MemoryLayout<Float>.stride)
+        }
+        return mel
+    }
+
+    /// Save last preCacheSize frames of chunk mel for next iteration.
+    private func savePreEncodeMelCache(from chunkMel: MLMultiArray, frames: Int) {
+        let numBins = config.numMelBins
+        let preCacheSize = config.streaming.preCacheSize
+        let src = chunkMel.dataPointer.assumingMemoryBound(to: Float.self)
+        let startFrame = max(0, frames - preCacheSize)
+        let copyFrames = min(preCacheSize, frames)
+
+        for bin in 0..<numBins {
+            let srcOffset = bin * frames + startFrame
+            let dstOffset = bin * preCacheSize + (preCacheSize - copyFrames)
+            preEncodeMelCache.withUnsafeMutableBufferPointer { buf in
+                memcpy(buf.baseAddress!.advanced(by: dstOffset),
+                       src.advanced(by: srcOffset),
+                       copyFrames * MemoryLayout<Float>.stride)
+            }
+        }
     }
 
     private func makeInt32Array(value: Int32) throws -> MLMultiArray {
