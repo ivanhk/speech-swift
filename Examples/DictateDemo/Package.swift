@@ -12,6 +12,7 @@ let package = Package(
             name: "DictateDemo",
             dependencies: [
                 .product(name: "ParakeetStreamingASR", package: "speech-swift"),
+                .product(name: "SpeechVAD", package: "speech-swift"),
                 .product(name: "AudioCommon", package: "speech-swift"),
             ],
             path: "DictateDemo",

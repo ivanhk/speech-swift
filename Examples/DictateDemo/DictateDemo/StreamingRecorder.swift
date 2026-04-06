@@ -9,6 +9,7 @@ final class StreamingRecorder {
 
     private var audioEngine: AVAudioEngine?
     private var onChunk: (([Float]) -> Void)?
+    private var totalSamples = 0
 
     /// Start recording and call `onChunk` with 16kHz mono Float32 samples.
     func start(onChunk: @escaping ([Float]) -> Void) {
@@ -54,6 +55,7 @@ final class StreamingRecorder {
             DispatchQueue.main.async { self.audioLevel = rms }
 
             self.onChunk?(data)
+            self.totalSamples += data.count
         }
 
         do {

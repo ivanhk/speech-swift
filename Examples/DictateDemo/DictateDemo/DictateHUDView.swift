@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Floating HUD window showing live transcription.
 struct DictateHUDView: View {
     @Bindable var viewModel: DictateViewModel
 
@@ -9,54 +8,69 @@ struct DictateHUDView: View {
             // Header
             HStack {
                 Circle()
-                    .fill(viewModel.isRecording ? .red : .gray)
+                    .fill(statusColor)
                     .frame(width: 8, height: 8)
-                Text(viewModel.isRecording ? "Listening..." : "Paused")
+                Text(statusText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
                 if viewModel.isRecording {
-                    // Audio level indicator
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(.green.opacity(0.7))
-                        .frame(width: CGFloat(viewModel.audioLevel * 100), height: 4)
-                        .animation(.easeOut(duration: 0.1), value: viewModel.audioLevel)
+                    Text("\(viewModel.wordCount) words")
+                        .font(.caption2).monospacedDigit()
+                        .foregroundStyle(.tertiary)
                 }
             }
 
             // Transcript
-            if viewModel.fullText.isEmpty {
+            if viewModel.sentences.isEmpty && viewModel.partialText.isEmpty {
                 Text("Speak to transcribe...")
                     .foregroundStyle(.tertiary)
                     .font(.body)
             } else {
-                ScrollView {
-                    HStack {
-                        Text(committedPart)
-                            + Text(partialPart)
-                        Spacer()
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(Array(viewModel.sentences.enumerated()), id: \.offset) { i, sentence in
+                                Text(sentence)
+                                    .font(.system(.body, design: .rounded))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .id(i)
+                            }
+                            if !viewModel.partialText.isEmpty {
+                                Text(viewModel.partialText)
+                                    .font(.system(.body, design: .rounded))
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .id("partial")
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 250)
+                    .onChange(of: viewModel.sentences.count) {
+                        withAnimation {
+                            proxy.scrollTo(viewModel.sentences.count - 1, anchor: .bottom)
+                        }
+                    }
+                    .onChange(of: viewModel.partialText) {
+                        withAnimation {
+                            proxy.scrollTo("partial", anchor: .bottom)
+                        }
                     }
                 }
-                .frame(maxHeight: 200)
             }
         }
         .padding()
-        .frame(width: 350, alignment: .leading)
+        .frame(width: 380, alignment: .leading)
         .background(.ultraThinMaterial)
     }
 
-    private var committedPart: AttributedString {
-        var s = AttributedString(viewModel.committedText)
-        s.font = .system(.body, design: .rounded)
-        return s
+    private var statusColor: Color {
+        if !viewModel.isRecording { return .gray }
+        return viewModel.isSpeechActive ? .green : .orange
     }
 
-    private var partialPart: AttributedString {
-        guard !viewModel.partialText.isEmpty else { return AttributedString() }
-        let prefix = viewModel.committedText.isEmpty ? "" : " "
-        var s = AttributedString(prefix + viewModel.partialText)
-        s.font = .system(.body, design: .rounded)
-        s.foregroundColor = .secondary
-        return s
+    private var statusText: String {
+        if !viewModel.isRecording { return "Paused" }
+        return viewModel.isSpeechActive ? "Listening..." : "Waiting for speech..."
     }
 }
