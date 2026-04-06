@@ -121,4 +121,57 @@ final class AudioRingBufferTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(buf.available, 0)
         XCTAssertLessThanOrEqual(buf.available, 512)
     }
+
+    // MARK: - Pointer-based write
+
+    func testWriteFromPointer() {
+        let buf = AudioRingBuffer(capacity: 8)
+        let samples: [Float] = [1, 2, 3, 4]
+        samples.withUnsafeBufferPointer { ptr in
+            buf.write(from: ptr.baseAddress!, count: ptr.count)
+        }
+        XCTAssertEqual(buf.available, 4)
+        let result = buf.read(4)
+        XCTAssertEqual(result, [1, 2, 3, 4])
+    }
+
+    func testWriteFromPointerOverwriteDropsOldest() {
+        let buf = AudioRingBuffer(capacity: 4)
+        let first: [Float] = [1, 2, 3, 4]
+        first.withUnsafeBufferPointer { ptr in
+            buf.write(from: ptr.baseAddress!, count: ptr.count)
+        }
+        let second: [Float] = [5, 6]
+        second.withUnsafeBufferPointer { ptr in
+            buf.write(from: ptr.baseAddress!, count: ptr.count)
+        }
+        XCTAssertEqual(buf.available, 4)
+        let result = buf.read(4)
+        XCTAssertEqual(result, [3, 4, 5, 6])
+    }
+
+    func testWriteFromPointerConcurrentWithRead() {
+        let buf = AudioRingBuffer(capacity: 1024)
+        let iterations = 10_000
+        let expectation = XCTestExpectation(description: "pointer concurrent")
+        expectation.expectedFulfillmentCount = 2
+
+        DispatchQueue.global().async {
+            let sample: [Float] = [42]
+            sample.withUnsafeBufferPointer { ptr in
+                for _ in 0..<iterations {
+                    buf.write(from: ptr.baseAddress!, count: 1)
+                }
+            }
+            expectation.fulfill()
+        }
+        DispatchQueue.global().async {
+            for _ in 0..<iterations { _ = buf.read(1) }
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 10)
+        XCTAssertGreaterThanOrEqual(buf.available, 0)
+        XCTAssertLessThanOrEqual(buf.available, 1024)
+    }
 }
