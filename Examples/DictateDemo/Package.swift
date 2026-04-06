@@ -18,5 +18,14 @@ let package = Package(
             path: "DictateDemo",
             exclude: ["DictateDemo.entitlements", "Info.plist"]
         ),
+        .testTarget(
+            name: "DictateDemoTests",
+            dependencies: [
+                .product(name: "ParakeetStreamingASR", package: "speech-swift"),
+                .product(name: "SpeechVAD", package: "speech-swift"),
+                .product(name: "AudioCommon", package: "speech-swift"),
+            ],
+            path: "Tests"
+        ),
     ]
 )
