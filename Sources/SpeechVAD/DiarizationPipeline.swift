@@ -116,13 +116,14 @@ public final class PyannoteDiarizationPipeline {
         embModelId: String? = nil,
         embeddingEngine: WeSpeakerEngine = .mlx,
         useVADFilter: Bool = false,
+        cacheBaseDir: URL? = nil,
         offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> PyannoteDiarizationPipeline {
         progressHandler?(0.0, "Downloading segmentation model...")
 
         // Load segmentation model
-        let segCacheDir = try HuggingFaceDownloader.getCacheDirectory(for: segModelId)
+        let segCacheDir = try cacheBaseDir ?? HuggingFaceDownloader.getCacheDirectory(for: segModelId)
         try await HuggingFaceDownloader.downloadWeights(
             modelId: segModelId,
             to: segCacheDir,

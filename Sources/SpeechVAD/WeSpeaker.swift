@@ -97,6 +97,7 @@ public final class WeSpeakerModel {
     public static func fromPretrained(
         modelId: String? = nil,
         engine: WeSpeakerEngine = .mlx,
+        cacheDir: URL? = nil,
         offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> WeSpeakerModel {
@@ -104,7 +105,7 @@ public final class WeSpeakerModel {
 
         progressHandler?(0.0, "Downloading speaker embedding model...")
 
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: resolvedModelId)
+        let cacheDir = try cacheDir ?? HuggingFaceDownloader.getCacheDirectory(for: resolvedModelId)
 
         switch engine {
         case .mlx:

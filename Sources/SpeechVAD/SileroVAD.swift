@@ -229,6 +229,7 @@ public final class SileroVADModel {
     public static func fromPretrained(
         modelId: String? = nil,
         engine: SileroVADEngine = .mlx,
+        cacheDir: URL? = nil,
         offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> SileroVADModel {
@@ -236,7 +237,7 @@ public final class SileroVADModel {
 
         progressHandler?(0.0, "Downloading model...")
 
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: resolvedModelId)
+        let cacheDir = try cacheDir ?? HuggingFaceDownloader.getCacheDirectory(for: resolvedModelId)
 
         switch engine {
         case .mlx:

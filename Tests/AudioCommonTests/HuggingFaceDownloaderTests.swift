@@ -100,4 +100,30 @@ final class HuggingFaceDownloaderTests: XCTestCase {
             .appendingPathComponent("nonexistent_\(UUID().uuidString)")
         XCTAssertFalse(HuggingFaceDownloader.weightsExist(in: tmpDir))
     }
+
+    // MARK: - cacheDir (custom cache directory)
+
+    func testCustomCacheDirSkipsDefaultResolution() async throws {
+        // Create a temp directory with a fake safetensors file
+        let tmpDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("custom_cache_\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tmpDir) }
+
+        let fakeWeights = tmpDir.appendingPathComponent("model.safetensors")
+        try Data([0x00]).write(to: fakeWeights)
+
+        // With custom cacheDir + offlineMode, should succeed without any network or default path resolution
+        var progressReported = false
+        try await HuggingFaceDownloader.downloadWeights(
+            modelId: "fake/model",
+            to: tmpDir,
+            offlineMode: true,
+            progressHandler: { progress in
+                if progress >= 1.0 { progressReported = true }
+            }
+        )
+        XCTAssertTrue(progressReported)
+        XCTAssertTrue(HuggingFaceDownloader.weightsExist(in: tmpDir))
+    }
 }

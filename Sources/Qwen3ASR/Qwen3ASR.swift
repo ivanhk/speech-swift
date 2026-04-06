@@ -304,6 +304,7 @@ public extension Qwen3ASRModel {
     /// Load model from HuggingFace hub with automatic weight downloading
     static func fromPretrained(
         modelId: String = "aufklarer/Qwen3-ASR-0.6B-MLX-4bit",
+        cacheDir: URL? = nil,
         offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> Qwen3ASRModel {
@@ -314,7 +315,7 @@ public extension Qwen3ASRModel {
         let detectedBits = ASRModelSize.detectBits(from: modelId)
 
         // Get cache directory
-        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try cacheDir ?? HuggingFaceDownloader.getCacheDirectory(for: modelId)
 
         // Download weights and tokenizer files (skips files that already exist on disk)
         // Download is the slowest part — give it 0-80% of progress

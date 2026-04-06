@@ -54,6 +54,7 @@ public enum HuggingFaceDownloader {
     /// Check if safetensors weights exist in a directory.
     public static func weightsExist(in directory: URL) -> Bool {
         let fm = FileManager.default
+        guard fm.fileExists(atPath: directory.path) else { return false }
         let contents: [URL]
         do {
             contents = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
