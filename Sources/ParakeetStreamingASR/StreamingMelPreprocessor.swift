@@ -31,10 +31,11 @@ class StreamingMelPreprocessor {
     init(config: ParakeetEOUConfig) {
         self.config = config
 
-        // Periodic Hann window (matches NeMo's actual training preprocessing)
+        // Symmetric Hann window: periodic=False, formula uses (N-1)
+        // Verified against NeMo: torch.hann_window(400, periodic=False)
         var window = [Float](repeating: 0, count: config.winLength)
         for i in 0..<config.winLength {
-            window[i] = 0.5 * (1.0 - cos(2.0 * Float.pi * Float(i) / Float(config.winLength)))
+            window[i] = 0.5 * (1.0 - cos(2.0 * Float.pi * Float(i) / Float(config.winLength - 1)))
         }
         self.hannWindow = window
 
@@ -207,14 +208,11 @@ class StreamingMelPreprocessor {
             }
         }
 
-        // Reflect center padding (matches batch Parakeet mel that produces correct output)
+        // Zero center padding: pad_mode="constant" (NeMo default)
+        // Verified: torch.stft center=True uses n_fft//2 zeros on each side
         let totalLen = reflectPad + preemphasized.count + reflectPad
         var padded = [Float](repeating: 0, count: totalLen)
-        for i in 0..<reflectPad { padded[i] = preemphasized[min(reflectPad - i, preemphasized.count - 1)] }
         for i in 0..<preemphasized.count { padded[reflectPad + i] = preemphasized[i] }
-        for i in 0..<reflectPad {
-            padded[reflectPad + preemphasized.count + i] = preemphasized[max(0, preemphasized.count - 2 - i)]
-        }
 
         let nFrames = (padded.count - paddedFFT) / config.hopLength + 1
         let melLength = audio.count / config.hopLength
@@ -225,13 +223,21 @@ class StreamingMelPreprocessor {
         var splitImag = [Float](repeating: 0, count: halfPadded)
         var paddedFrame = [Float](repeating: 0, count: paddedFFT)
 
+        // torch.stft centers the window in the n_fft frame:
+        // frame[0..55] = 0, frame[56..455] = signal * hann, frame[456..511] = 0
+        let winOffset = (paddedFFT - config.winLength) / 2
+
         for frame in 0..<nFrames {
             let start = frame * config.hopLength
+
+            // Zero the FFT frame
+            memset(&paddedFrame, 0, paddedFFT * MemoryLayout<Float>.stride)
+            // Apply window centered at offset 56
             padded.withUnsafeBufferPointer { buf in
-                vDSP_vmul(buf.baseAddress! + start, 1, hannWindow, 1,
-                          &paddedFrame, 1, vDSP_Length(config.winLength))
+                vDSP_vmul(buf.baseAddress! + start + winOffset, 1, hannWindow, 1,
+                          &paddedFrame[winOffset], 1, vDSP_Length(config.winLength))
             }
-            for i in config.winLength..<paddedFFT { paddedFrame[i] = 0 }
+
             for i in 0..<halfPadded {
                 splitReal[i] = paddedFrame[2 * i]
                 splitImag[i] = paddedFrame[2 * i + 1]
