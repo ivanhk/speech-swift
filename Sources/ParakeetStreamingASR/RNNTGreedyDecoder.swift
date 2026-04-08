@@ -119,17 +119,17 @@ struct RNNTGreedyDecoder {
     // MARK: - Array Operations
 
     /// Copy encoder frame at time `t` from [B, T, D] layout.
-    /// Output slice is [1, 1, D] for joint network input.
+    /// Encoder output is float16, joint input (slice) is float32 — convert during copy.
     private func copyEncoderFrame(from encoded: MLMultiArray, at t: Int, to slice: MLMultiArray) {
         let hidden = config.encoderHidden
-        // encoded is [1, T, D] — frame t is contiguous at offset t * D
-        let src = encoded.dataPointer.advanced(by: t * hidden * MemoryLayout<Float16>.stride)
-        memcpy(slice.dataPointer, src, hidden * MemoryLayout<Float16>.stride)
+        let src = encoded.dataPointer.assumingMemoryBound(to: Float16.self).advanced(by: t * hidden)
+        let dst = slice.dataPointer.assumingMemoryBound(to: Float.self)
+        for i in 0..<hidden { dst[i] = Float(src[i]) }
     }
 
     private func logSoftmax(_ array: MLMultiArray, tokenId: Int, count: Int, floatBuf: UnsafeMutablePointer<Float>) -> Float {
-        let ptr = array.dataPointer.assumingMemoryBound(to: Float16.self)
-        for i in 0..<count { floatBuf[i] = Float(ptr[i]) }
+        let ptr = array.dataPointer.assumingMemoryBound(to: Float.self)
+        memcpy(floatBuf, ptr, count * MemoryLayout<Float>.stride)
 
         var maxVal: Float = 0
         var maxIdx: vDSP_Length = 0
@@ -145,13 +145,12 @@ struct RNNTGreedyDecoder {
         vDSP_sve(floatBuf, 1, &sumExp, vDSP_Length(count))
 
         let logSumExp = log(sumExp) + maxVal
-        let logit = Float(ptr[tokenId])
-        return logit - logSumExp
+        return ptr[tokenId] - logSumExp
     }
 
     private func argmax(_ array: MLMultiArray, count: Int, floatBuf: UnsafeMutablePointer<Float>) -> Int {
-        let ptr = array.dataPointer.assumingMemoryBound(to: Float16.self)
-        for i in 0..<count { floatBuf[i] = Float(ptr[i]) }
+        let ptr = array.dataPointer.assumingMemoryBound(to: Float.self)
+        memcpy(floatBuf, ptr, count * MemoryLayout<Float>.stride)
         var maxVal: Float = 0
         var maxIdx: vDSP_Length = 0
         vDSP_maxvi(floatBuf, 1, &maxVal, &maxIdx, vDSP_Length(count))

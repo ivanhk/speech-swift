@@ -84,10 +84,10 @@ public class StreamingSession {
         let decLayers = config.decoderLayers
         let decHidden = config.decoderHidden
 
-        h = try MLMultiArray(shape: [decLayers, 1, decHidden] as [NSNumber], dataType: .float16)
-        c = try MLMultiArray(shape: [decLayers, 1, decHidden] as [NSNumber], dataType: .float16)
-        memset(h.dataPointer, 0, decLayers * decHidden * MemoryLayout<Float16>.stride)
-        memset(c.dataPointer, 0, decLayers * decHidden * MemoryLayout<Float16>.stride)
+        h = try MLMultiArray(shape: [decLayers, 1, decHidden] as [NSNumber], dataType: .float32)
+        c = try MLMultiArray(shape: [decLayers, 1, decHidden] as [NSNumber], dataType: .float32)
+        memset(h.dataPointer, 0, decLayers * decHidden * MemoryLayout<Float>.stride)
+        memset(c.dataPointer, 0, decLayers * decHidden * MemoryLayout<Float>.stride)
 
         // Prime decoder with blank token
         tokenArray = try MLMultiArray(shape: [1, 1], dataType: .int32)
@@ -101,7 +101,7 @@ public class StreamingSession {
         c = initOut.featureValue(for: "c_out")!.multiArrayValue!
 
         // Encoder slice and joint provider
-        encSlice = try MLMultiArray(shape: [1, 1, hidden as NSNumber], dataType: .float16)
+        encSlice = try MLMultiArray(shape: [1, 1, hidden as NSNumber], dataType: .float32)
         jointProvider = ReusableFeatureProvider([
             "encoder_output": encSlice, "decoder_output": decoderOutput,
         ])
