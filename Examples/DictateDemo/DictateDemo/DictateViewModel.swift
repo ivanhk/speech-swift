@@ -105,9 +105,8 @@ final class ASRProcessor: Sendable {
         // Compute target gain, then blend with previous gain for smooth transition.
         var normalized = chunk
         let rms = sqrt(chunk.reduce(0) { $0 + $1 * $1 } / Float(chunk.count))
-        let targetGain: Float = rms > 0.002 ? min(0.1 / rms, 5.0) : smoothGain
-        smoothGain = smoothGain * 0.85 + targetGain * 0.15  // Slow exponential smoothing
-        for i in 0..<normalized.count { normalized[i] = min(max(normalized[i] * smoothGain, -1.0), 1.0) }
+        // No normalization — FluidAudio feeds raw mic audio directly.
+        // The model should handle normal mic levels.
 
         // VAD on normalized audio
         var offset = 0
@@ -121,12 +120,11 @@ final class ASRProcessor: Sendable {
 
         // ASR on normalized audio
         lastRms = rms
-        let normRms = sqrt(normalized.reduce(0) { $0 + $1 * $1 } / Float(normalized.count))
-        lastNormRms = normRms
+        lastNormRms = rms  // Same as raw — no normalization
         do {
             self.appendDebugAudio(normalized)
             let partials = try session.pushAudio(normalized)
-            dlog("asr: rms=\(String(format:"%.4f",rms))→\(String(format:"%.4f",normRms)) gain=\(String(format:"%.1f",smoothGain)) vad=\(speechActive) partials=\(partials.count)")
+            dlog("asr: rms=\(String(format:"%.4f",rms)) vad=\(speechActive) partials=\(partials.count)")
             if !partials.isEmpty {
                 dlog("ASR: \(partials.count) partials — '\(partials.map { $0.text }.joined(separator: ", "))'")
             }
