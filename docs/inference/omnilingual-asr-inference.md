@@ -5,6 +5,8 @@ For architecture and weights, see [`docs/models/omnilingual-asr.md`](../models/o
 
 ## Quick start
 
+### CoreML backend (default — runs on Neural Engine, fixed 5 s or 10 s window)
+
 ```swift
 import OmnilingualASR
 import AudioCommon
@@ -15,7 +17,7 @@ let text = try model.transcribeAudio(audio, sampleRate: 16000)
 print(text)
 ```
 
-The default model is the 10 s CoreML INT8 variant
+The default CoreML model is the 10 s INT8 variant
 (`aufklarer/Omnilingual-ASR-CTC-300M-CoreML-INT8-10s`). For lower memory
 and faster cold start, use the 5 s variant:
 
@@ -24,11 +26,38 @@ let model = try await OmnilingualASRModel.fromPretrained(
     modelId: OmnilingualASRModel.shortWindowModelId)
 ```
 
+### MLX backend (runs on Metal/GPU, variable input length, 300M / 1B / 3B / 7B)
+
+```swift
+import OmnilingualASR
+
+// Default: 300M @ 4-bit (≈193 MB on disk)
+let model = try await OmnilingualASRMLXModel.fromPretrained()
+
+// Larger variant for higher accuracy (≈549 MB / 1.7 GB / 3.6 GB)
+let big = try await OmnilingualASRMLXModel.fromPretrained(variant: .b1, bits: 4)
+let huge = try await OmnilingualASRMLXModel.fromPretrained(variant: .b3, bits: 4)
+let max = try await OmnilingualASRMLXModel.fromPretrained(variant: .b7, bits: 4)
+
+let text = try model.transcribeAudio(audio, sampleRate: 16000)
+```
+
+The MLX backend takes any input length up to the 40 s reference cap — there
+is no fixed-window CoreML graph to pad to. Quantisation is mlx-swift
+`QuantizedLinear` (group size 64, bits 4 or 8).
+
 ## CLI
 
 ```bash
-audio transcribe recording.wav --engine omnilingual           # 10 s window (default)
-audio transcribe recording.wav --engine omnilingual --window 5  # 5 s window
+# CoreML (default)
+audio transcribe recording.wav --engine omnilingual                     # 10 s window
+audio transcribe recording.wav --engine omnilingual --window 5            # 5 s window
+
+# MLX
+audio transcribe recording.wav --engine omnilingual --backend mlx                            # 300M @ 4-bit
+audio transcribe recording.wav --engine omnilingual --backend mlx --variant 1B               # 1B @ 4-bit
+audio transcribe recording.wav --engine omnilingual --backend mlx --variant 3B --bits 8      # 3B @ 8-bit
+audio transcribe recording.wav --engine omnilingual --backend mlx --variant 7B               # 7B @ 4-bit
 ```
 
 ## Pipeline

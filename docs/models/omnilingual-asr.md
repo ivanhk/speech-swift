@@ -101,9 +101,12 @@ collections currently publish:
 | `Omnilingual-ASR-CTC-7B-MLX-4bit` | 3.55 GB | MLX backend, ~7B params (largest CTC variant) |
 | `Omnilingual-ASR-CTC-7B-MLX-8bit` | 6.63 GB | MLX backend, ~7B params (largest CTC variant) |
 
-The 5 s and 10 s CoreML variants are wired through this module via
-`OmnilingualASRModel.shortWindowModelId` and `OmnilingualASRModel.defaultModelId`.
-MLX 1B / 3B / 7B variants are tracked in [#195](https://github.com/soniqo/speech-swift/issues/195).
+**All 10 published variants are wired through this module:**
+
+- CoreML (5 s / 10 s) via `OmnilingualASRModel.fromPretrained(...)` — `OmnilingualASRModel.shortWindowModelId` and `OmnilingualASRModel.defaultModelId`
+- MLX (300M / 1B / 3B / 7B in 4-bit and 8-bit) via `OmnilingualASRMLXModel.fromPretrained(variant: .b1, bits: 4, ...)` — auto-detects variant and bits from the HF model id
+
+Both backends share the `Configuration`, `SentencePieceVocabulary`, `CTCGreedyDecoder`, and waveform `layer_normalize` preprocessing, so behaviour matches modulo runtime differences (CoreML on ANE vs MLX on Metal).
 
 ## See also
 
