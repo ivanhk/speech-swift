@@ -210,11 +210,11 @@ final class DownloadSecurityTests: XCTestCase {
 
         // Resolve the actual cache directory via the downloader (handles both
         // legacy flat layout and the current Hub-style nested layout).
+        // Note: getCacheDirectory creates the dir as a side effect, so check
+        // for vocab.json — not just dir existence — to detect a real cache.
         let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
-        if FileManager.default.fileExists(atPath: cacheDir.path) {
-            // Verify expected files are present
-            let vocabPath = cacheDir.appendingPathComponent("vocab.json")
-            XCTAssertTrue(FileManager.default.fileExists(atPath: vocabPath.path), "vocab.json should exist in cache")
+        let vocabPath = cacheDir.appendingPathComponent("vocab.json")
+        if FileManager.default.fileExists(atPath: vocabPath.path) {
 
             // Verify tokenizer loads from the cached path
             let tokenizer = Qwen3Tokenizer()
