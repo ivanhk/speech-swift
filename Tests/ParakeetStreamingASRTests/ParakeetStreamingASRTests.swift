@@ -275,6 +275,11 @@ final class E2EParakeetStreamingASRTests: XCTestCase {
         let lastPartial = partials.last!
         XCTAssertTrue(lastPartial.isFinal, "Last partial should be final")
         XCTAssertFalse(lastPartial.text.isEmpty, "Final text should not be empty")
+        // Verify exact-ish content (loopback architecture should produce clean text)
+        XCTAssertTrue(lastPartial.text.contains("guarantee"),
+                      "Streamed text should include 'guarantee' but was: \(lastPartial.text)")
+        XCTAssertTrue(lastPartial.text.contains("shipped tomorrow"),
+                      "Streamed text should include 'shipped tomorrow' but was: \(lastPartial.text)")
     }
 
     func testStreamingSession() throws {

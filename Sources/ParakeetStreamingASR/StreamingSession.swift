@@ -20,8 +20,8 @@ public class StreamingSession {
     private var cacheLastChannel: MLMultiArray
     private var cacheLastTime: MLMultiArray
     private var cacheLastChannelLen: MLMultiArray
-    // Pre-encode mel cache: last preCacheSize mel frames from previous chunk
-    private var preEncodeMelCache: [Float]
+    // Pre-encode mel cache as separate model I/O (loopback architecture)
+    private var preCache: MLMultiArray
 
     // Decoder LSTM state
     private var h: MLMultiArray
@@ -42,6 +42,12 @@ public class StreamingSession {
     private var eouDetected = false
     private var sampleBuffer: [Float] = []
     private var eouTokenOffset: Int = 0  // Token index where last EOU fired
+    private var lastEmittedFinalText: String = ""
+
+    // EOU debouncing — match FluidAudio: require sustained EOU before firing
+    public var eouDebounceMs: Int = 1280
+    private var eouFirstDetectedAtSamples: Int? = nil
+    private var totalSamplesProcessed: Int = 0
 
     init(
         config: ParakeetEOUConfig,
@@ -64,10 +70,13 @@ public class StreamingSession {
         let hidden = config.encoderHidden
         let attCtx = config.attentionContext
         let convCache = config.convCacheSize
+        let preCacheSize = config.streaming.preCacheSize
+        let numMelBins = config.numMelBins
 
-        // Pre-encode mel cache: zeros for first chunk
-        preEncodeMelCache = [Float](repeating: 0,
-            count: config.numMelBins * config.streaming.preCacheSize)
+        // Pre-encode mel cache as MLMultiArray (loopback model I/O)
+        preCache = try MLMultiArray(
+            shape: [1, numMelBins as NSNumber, preCacheSize as NSNumber], dataType: .float32)
+        memset(preCache.dataPointer, 0, numMelBins * preCacheSize * MemoryLayout<Float>.stride)
 
         cacheLastChannel = try MLMultiArray(
             shape: [layers, 1, attCtx, hidden] as [NSNumber], dataType: .float32)
@@ -80,14 +89,21 @@ public class StreamingSession {
                layers * 1 * hidden * convCache * MemoryLayout<Float>.stride)
         cacheLastChannelLen[0] = NSNumber(value: Int32(0))
 
-        // Initialize LSTM state
+        // Initialize LSTM state. New model uses fp32 inputs but fp16 outputs.
+        // We allocate fp32 for inputs; outputs come back as fp16 MLMultiArrays
+        // and we re-cast to fp32 buffers before the next decoder call.
         let decLayers = config.decoderLayers
         let decHidden = config.decoderHidden
 
-        h = try MLMultiArray(shape: [decLayers, 1, decHidden] as [NSNumber], dataType: .float16)
-        c = try MLMultiArray(shape: [decLayers, 1, decHidden] as [NSNumber], dataType: .float16)
-        memset(h.dataPointer, 0, decLayers * decHidden * MemoryLayout<Float16>.stride)
-        memset(c.dataPointer, 0, decLayers * decHidden * MemoryLayout<Float16>.stride)
+        h = try MLMultiArray(shape: [decLayers, 1, decHidden] as [NSNumber], dataType: .float32)
+        c = try MLMultiArray(shape: [decLayers, 1, decHidden] as [NSNumber], dataType: .float32)
+        memset(h.dataPointer, 0, decLayers * decHidden * MemoryLayout<Float>.stride)
+        memset(c.dataPointer, 0, decLayers * decHidden * MemoryLayout<Float>.stride)
+
+        // Decoder output buffer (fp32, will be filled from fp16 model output)
+        decoderOutput = try MLMultiArray(
+            shape: [1, 1, decHidden as NSNumber], dataType: .float32)
+        memset(decoderOutput.dataPointer, 0, decHidden * MemoryLayout<Float>.stride)
 
         // Prime decoder with blank token
         tokenArray = try MLMultiArray(shape: [1, 1], dataType: .int32)
@@ -96,12 +112,13 @@ public class StreamingSession {
 
         decoderProvider = ReusableFeatureProvider(["token": tokenArray, "h": h, "c": c])
         let initOut = try decoder.prediction(from: decoderProvider)
-        decoderOutput = initOut.featureValue(for: "decoder_output")!.multiArrayValue!
-        h = initOut.featureValue(for: "h_out")!.multiArrayValue!
-        c = initOut.featureValue(for: "c_out")!.multiArrayValue!
+        Self.copyCastFP16ToFP32(initOut.featureValue(for: "decoder_output")!.multiArrayValue!,
+                                into: decoderOutput)
+        Self.copyCastFP16ToFP32(initOut.featureValue(for: "h_out")!.multiArrayValue!, into: h)
+        Self.copyCastFP16ToFP32(initOut.featureValue(for: "c_out")!.multiArrayValue!, into: c)
 
-        // Encoder slice and joint provider
-        encSlice = try MLMultiArray(shape: [1, 1, hidden as NSNumber], dataType: .float16)
+        // Encoder slice for joint input — fp32 [1, 1, encoderHidden]
+        encSlice = try MLMultiArray(shape: [1, 1, hidden as NSNumber], dataType: .float32)
         jointProvider = ReusableFeatureProvider([
             "encoder_output": encSlice, "decoder_output": decoderOutput,
         ])
@@ -124,12 +141,20 @@ public class StreamingSession {
 
         sampleBuffer.append(contentsOf: samples)
 
+        // Cache-aware streaming with audio overlap.
+        // The encoder consumes melFrames mel frames per chunk but only the first
+        // outputFrames output frames (after subsampling) correspond to NEW audio.
+        // The shift between chunks must equal `outputFrames * subsamplingFactor`
+        // mel frames (in samples) to avoid duplication and gaps.
         let samplesPerChunk = config.streaming.melFrames * config.hopLength
+        let shiftMelFrames = config.streaming.outputFrames * config.subsamplingFactor
+        let shiftSamples = shiftMelFrames * config.hopLength
         var results: [ParakeetStreamingASRModel.PartialTranscript] = []
 
         while sampleBuffer.count >= samplesPerChunk {
             let chunk = Array(sampleBuffer.prefix(samplesPerChunk))
-            sampleBuffer.removeFirst(samplesPerChunk)
+            let drop = min(shiftSamples, sampleBuffer.count)
+            sampleBuffer.removeFirst(drop)
 
             let partial = try processChunk(chunk)
             if let partial { results.append(partial) }
@@ -140,41 +165,80 @@ public class StreamingSession {
         return results
     }
 
+    /// Force-emit a final transcript for the current utterance and continue
+    /// the session. Used when an external signal (e.g. VAD silence) indicates
+    /// end-of-utterance before the joint's EOU head has fired.
+    ///
+    /// Keeps encoder cache and decoder LSTM state intact so the next utterance
+    /// continues streaming without reinitialization.
+    public func forceEndOfUtterance() -> ParakeetStreamingASRModel.PartialTranscript? {
+        let pendingTokens = Array(allTokens[eouTokenOffset...])
+        let pendingLogProbs = Array(allLogProbs[eouTokenOffset...])
+
+        // Advance segment/offset regardless so stale EOU state is cleared.
+        eouTokenOffset = allTokens.count
+        eouDetected = false
+        eouFirstDetectedAtSamples = nil
+
+        guard !pendingTokens.isEmpty else { return nil }
+        let text = vocabulary.decode(pendingTokens)
+        if text.isEmpty { return nil }
+        // Don't dedupe against lastEmittedFinalText here — the caller has
+        // signaled a new utterance boundary (e.g. via VAD), so identical
+        // text across different utterances is legitimate and must be emitted.
+        // Still update the field so subsequent same-chunk duplicates in the
+        // normal EOU path don't re-emit.
+
+        let confidence: Float
+        if !pendingLogProbs.isEmpty {
+            let mean = pendingLogProbs.reduce(0, +) / Float(pendingLogProbs.count)
+            confidence = min(1.0, exp(mean))
+        } else {
+            confidence = 0
+        }
+        let emittedSegment = segmentIndex
+        segmentIndex += 1
+        lastEmittedFinalText = text
+        return ParakeetStreamingASRModel.PartialTranscript(
+            text: text,
+            isFinal: true,
+            confidence: confidence,
+            eouDetected: true,
+            segmentIndex: emittedSegment
+        )
+    }
+
     /// Signal end of audio stream and return any remaining transcription.
     public func finalize() throws -> [ParakeetStreamingASRModel.PartialTranscript] {
-        var results: [ParakeetStreamingASRModel.PartialTranscript] = []
-
-        // Process remaining buffered samples
+        // Process remaining buffered samples (a single trailing chunk).
         if !sampleBuffer.isEmpty && !eouDetected {
-            // Pad to full chunk size
             let samplesPerChunk = config.streaming.melFrames * config.hopLength
             let padded = sampleBuffer + [Float](repeating: 0, count: max(0, samplesPerChunk - sampleBuffer.count))
             sampleBuffer.removeAll()
-            if let partial = try processChunk(Array(padded.prefix(samplesPerChunk))) {
-                results.append(partial)
-            }
+            _ = try processChunk(Array(padded.prefix(samplesPerChunk)))
         }
 
-        // Emit final transcript
-        if !allTokens.isEmpty {
-            let text = vocabulary.decode(allTokens)
-            let confidence: Float
-            if !allLogProbs.isEmpty {
-                let mean = allLogProbs.reduce(0, +) / Float(allLogProbs.count)
-                confidence = min(1.0, exp(mean))
-            } else {
-                confidence = 0
-            }
-            results.append(ParakeetStreamingASRModel.PartialTranscript(
-                text: text,
-                isFinal: true,
-                confidence: confidence,
-                eouDetected: eouDetected,
-                segmentIndex: segmentIndex
-            ))
-        }
+        // Emit a single final transcript covering everything since the last EOU.
+        // Tokens before eouTokenOffset were already returned in a prior final partial.
+        let pendingTokens = Array(allTokens[eouTokenOffset...])
+        let pendingLogProbs = Array(allLogProbs[eouTokenOffset...])
+        guard !pendingTokens.isEmpty else { return [] }
 
-        return results
+        let text = vocabulary.decode(pendingTokens)
+        let confidence: Float
+        if !pendingLogProbs.isEmpty {
+            let mean = pendingLogProbs.reduce(0, +) / Float(pendingLogProbs.count)
+            confidence = min(1.0, exp(mean))
+        } else {
+            confidence = 0
+        }
+        return [ParakeetStreamingASRModel.PartialTranscript(
+            text: text,
+            isFinal: true,
+            confidence: confidence,
+            eouDetected: eouDetected,
+            segmentIndex: segmentIndex
+        )]
     }
 
     // MARK: - Internal
@@ -207,18 +271,12 @@ public class StreamingSession {
             chunkMel = rawMel
         }
 
-        // Prepend pre-encode mel cache to chunk mel for encoder input
-        let preCacheSize = config.streaming.preCacheSize
-        let totalFrames = preCacheSize + expectedFrames
-        let mel = try prependMelCache(chunkMel, expectedFrames: expectedFrames, totalFrames: totalFrames)
-
-        // Save last preCacheSize frames of chunk mel for next iteration
-        savePreEncodeMelCache(from: chunkMel, frames: expectedFrames)
-
-        // Run cache-aware encoder
+        // Run cache-aware encoder — loopback architecture takes pre_cache as a
+        // separate input and returns new_pre_cache to feed back next chunk.
         let encoderInput = try MLDictionaryFeatureProvider(dictionary: [
-            "audio_signal": MLFeatureValue(multiArray: mel),
+            "audio_signal": MLFeatureValue(multiArray: chunkMel),
             "audio_length": MLFeatureValue(multiArray: makeInt32Array(value: Int32(expectedFrames))),
+            "pre_cache": MLFeatureValue(multiArray: preCache),
             "cache_last_channel": MLFeatureValue(multiArray: cacheLastChannel),
             "cache_last_time": MLFeatureValue(multiArray: cacheLastTime),
             "cache_last_channel_len": MLFeatureValue(multiArray: cacheLastChannelLen),
@@ -228,11 +286,15 @@ public class StreamingSession {
 
         let encoded = encoderOutput.featureValue(for: "encoded_output")!.multiArrayValue!
         let reportedLength = encoderOutput.featureValue(for: "encoded_length")!.multiArrayValue![0].intValue
-        // Encoder output is [B, T, D] — frame count is shape[1]
+        // Encoder output is [B, T, D] — frame count is shape[1].
+        // Take the first `outputFrames` frames; the rest are future-context overlap.
         let actualFrames = encoded.shape[1].intValue
-        let encodedLength = min(reportedLength, actualFrames)
+        let totalFrames = min(reportedLength, actualFrames)
+        let encodedLength = min(config.streaming.outputFrames, totalFrames)
+        let frameOffset = 0
 
-        // Update encoder caches
+        // Update encoder caches (including new_pre_cache for next iteration)
+        preCache = encoderOutput.featureValue(for: "new_pre_cache")!.multiArrayValue!
         cacheLastChannel = encoderOutput.featureValue(for: "new_cache_last_channel")!.multiArrayValue!
         cacheLastTime = encoderOutput.featureValue(for: "new_cache_last_time")!.multiArrayValue!
         cacheLastChannelLen = encoderOutput.featureValue(for: "new_cache_last_channel_len")!.multiArrayValue!
@@ -245,6 +307,7 @@ public class StreamingSession {
         let result = try rnntDecoder.decode(
             encoded: encoded,
             encodedLength: encodedLength,
+            frameOffset: frameOffset,
             h: &h,
             c: &c,
             decoderOutput: &decoderOutput,
@@ -258,16 +321,44 @@ public class StreamingSession {
         allTokens.append(contentsOf: result.tokens)
         allLogProbs.append(contentsOf: result.tokenLogProbs)
 
-
+        // EOU debounce: require sustained EOU silence before firing.
+        // If new tokens were emitted, speech is ongoing — reset the timer.
+        // Otherwise, start the timer on first EOU and confirm after eouDebounceMs.
+        totalSamplesProcessed += audio.count
         if result.eouDetected {
-            eouDetected = true
+            if !result.tokens.isEmpty {
+                eouFirstDetectedAtSamples = nil
+            } else if eouFirstDetectedAtSamples == nil {
+                eouFirstDetectedAtSamples = totalSamplesProcessed
+            }
+            if let firstAt = eouFirstDetectedAtSamples {
+                let elapsedMs = ((totalSamplesProcessed - firstAt) * 1000) / config.sampleRate
+                AudioLog.inference.debug("EOU candidate: elapsed=\(elapsedMs)ms (need \(self.eouDebounceMs)ms)")
+                if elapsedMs >= eouDebounceMs {
+                    eouDetected = true
+                    AudioLog.inference.info("EOU CONFIRMED after \(elapsedMs)ms silence")
+                }
+            }
+        } else {
+            eouFirstDetectedAtSamples = nil
         }
 
         // Decode only tokens since last EOU boundary
         let currentTokens = Array(allTokens[eouTokenOffset...])
         let currentLogProbs = Array(allLogProbs[eouTokenOffset...])
         let text = vocabulary.decode(currentTokens)
-        guard !text.isEmpty else { return nil }
+        if text.isEmpty {
+            // Nothing to emit. If EOU fired during silence with no pending text,
+            // consume it here so a stale flag doesn't prematurely finalize the
+            // next utterance's first tokens.
+            if eouDetected {
+                eouTokenOffset = allTokens.count
+                segmentIndex += 1
+                eouDetected = false
+                eouFirstDetectedAtSamples = nil
+            }
+            return nil
+        }
 
         let confidence: Float
         if !currentLogProbs.isEmpty {
@@ -278,20 +369,21 @@ public class StreamingSession {
         }
 
         if eouDetected {
-            let partial = ParakeetStreamingASRModel.PartialTranscript(
+            // Always advance offset/segment so future partials are scoped to the
+            // new utterance, but suppress consecutive duplicate finals (model
+            // re-emitting the same content from overlapping audio chunks).
+            eouTokenOffset = allTokens.count
+            segmentIndex += 1
+            eouDetected = false
+            if text == lastEmittedFinalText { return nil }
+            lastEmittedFinalText = text
+            return ParakeetStreamingASRModel.PartialTranscript(
                 text: text,
                 isFinal: true,
                 confidence: confidence,
                 eouDetected: true,
-                segmentIndex: segmentIndex
+                segmentIndex: segmentIndex - 1
             )
-            // Keep ALL state — encoder caches, decoder LSTM, tokens.
-            // Just move the token offset and segment index.
-            // The model needs continuous context to re-engage after silence.
-            eouTokenOffset = allTokens.count
-            segmentIndex += 1
-            eouDetected = false
-            return partial
         }
 
         // Suppress duplicate partials — only emit if text changed
@@ -306,68 +398,18 @@ public class StreamingSession {
         )
     }
 
-    /// After EOU: clear tokens only. Keep all encoder/decoder state.
-    /// The RNNT model's encoder and decoder carry context that helps
-    /// process the next utterance — resetting causes hallucination.
-    private func resetForNextUtterance() {
-        allTokens.removeAll()
-        allLogProbs.removeAll()
-        segmentIndex += 1
-        eouDetected = false
-    }
-
-    // MARK: - Pre-encode Mel Cache
-
-    /// Prepend pre-encode mel cache to chunk mel, creating [1, 128, totalFrames].
-    private func prependMelCache(_ chunkMel: MLMultiArray, expectedFrames: Int, totalFrames: Int) throws -> MLMultiArray {
-        let numBins = config.numMelBins
-        let preCacheSize = config.streaming.preCacheSize
-        let mel = try MLMultiArray(
-            shape: [1, numBins as NSNumber, totalFrames as NSNumber], dataType: .float32)
-        let dst = mel.dataPointer.assumingMemoryBound(to: Float.self)
-        let src = chunkMel.dataPointer.assumingMemoryBound(to: Float.self)
-
-        for bin in 0..<numBins {
-            let dstOffset = bin * totalFrames
-            let cacheOffset = bin * preCacheSize
-            let srcOffset = bin * expectedFrames
-
-            // Copy pre-encode cache (preCacheSize frames)
-            memcpy(dst.advanced(by: dstOffset),
-                   preEncodeMelCache.withUnsafeBufferPointer { $0.baseAddress! }.advanced(by: cacheOffset),
-                   preCacheSize * MemoryLayout<Float>.stride)
-
-            // Copy chunk mel (expectedFrames frames)
-            memcpy(dst.advanced(by: dstOffset + preCacheSize),
-                   src.advanced(by: srcOffset),
-                   expectedFrames * MemoryLayout<Float>.stride)
-        }
-        return mel
-    }
-
-    /// Save last preCacheSize frames of chunk mel for next iteration.
-    private func savePreEncodeMelCache(from chunkMel: MLMultiArray, frames: Int) {
-        let numBins = config.numMelBins
-        let preCacheSize = config.streaming.preCacheSize
-        let src = chunkMel.dataPointer.assumingMemoryBound(to: Float.self)
-        let startFrame = max(0, frames - preCacheSize)
-        let copyFrames = min(preCacheSize, frames)
-
-        for bin in 0..<numBins {
-            let srcOffset = bin * frames + startFrame
-            let dstOffset = bin * preCacheSize + (preCacheSize - copyFrames)
-            preEncodeMelCache.withUnsafeMutableBufferPointer { buf in
-                memcpy(buf.baseAddress!.advanced(by: dstOffset),
-                       src.advanced(by: srcOffset),
-                       copyFrames * MemoryLayout<Float>.stride)
-            }
-        }
-    }
-
     private func makeInt32Array(value: Int32) throws -> MLMultiArray {
         let array = try MLMultiArray(shape: [1], dataType: .int32)
         array[0] = NSNumber(value: value)
         return array
+    }
+
+    /// Copy fp16 model output into a fp32 input buffer (in place).
+    static func copyCastFP16ToFP32(_ src: MLMultiArray, into dst: MLMultiArray) {
+        let count = src.count
+        let srcPtr = src.dataPointer.assumingMemoryBound(to: Float16.self)
+        let dstPtr = dst.dataPointer.assumingMemoryBound(to: Float.self)
+        for i in 0..<count { dstPtr[i] = Float(srcPtr[i]) }
     }
 
     /// Truncate mel to exactly `targetFrames` frames.

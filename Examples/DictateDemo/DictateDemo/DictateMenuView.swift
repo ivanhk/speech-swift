@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DictateMenuView: View {
-    @Bindable var viewModel: DictateViewModel
+    @ObservedObject var viewModel: DictateViewModel
 
     var body: some View {
         VStack(spacing: 8) {
@@ -33,22 +33,45 @@ struct DictateMenuView: View {
                         .padding(.horizontal)
                 }
 
-                if !viewModel.fullText.isEmpty {
-                    Divider()
-                    Text(viewModel.fullText)
-                        .font(.system(.body, design: .rounded))
-                        .lineLimit(8)
-                        .frame(maxWidth: 300, alignment: .leading)
-                        .padding(.horizontal)
-
-                    HStack {
-                        Button("Copy") { viewModel.copyToClipboard() }
-                        Button("Paste") { viewModel.pasteToFrontApp() }
-                        Spacer()
-                        Button("Clear") { viewModel.clearText() }
+                // Always reserve the transcript area so the MenuBarExtra
+                // popover is sized correctly when it first opens. Otherwise
+                // the popover snapshots its content size at open time and
+                // doesn't resize when sentences/partialText grow later,
+                // clipping new content off the visible area.
+                Divider()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if viewModel.sentences.isEmpty && viewModel.partialText.isEmpty {
+                            Text(viewModel.isRecording ? "Speak..." : "Click Start to dictate")
+                                .foregroundStyle(.tertiary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            ForEach(Array(viewModel.sentences.enumerated()), id: \.offset) { _, sentence in
+                                Text(sentence)
+                                    .font(.system(.body, design: .rounded))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            if !viewModel.partialText.isEmpty {
+                                Text(viewModel.partialText)
+                                    .font(.system(.body, design: .rounded))
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
                     }
                     .padding(.horizontal)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(width: 320, height: 220)
+
+                HStack {
+                    Button("Copy") { viewModel.copyToClipboard() }
+                        .disabled(viewModel.sentences.isEmpty && viewModel.partialText.isEmpty)
+                    Spacer()
+                    Button("Clear") { viewModel.clearText() }
+                        .disabled(viewModel.sentences.isEmpty && viewModel.partialText.isEmpty)
+                }
+                .padding(.horizontal)
             }
 
             if let error = viewModel.errorMessage {

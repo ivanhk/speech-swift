@@ -200,7 +200,8 @@ final class E2EDictateDemoTests: XCTestCase {
         let batchText = try model.transcribeAudio(audio, sampleRate: 16000)
         print("batch: '\(batchText)'")
 
-        XCTAssertFalse(streamPartials.isEmpty || !batchText.isEmpty, "Should produce text from mic audio")
+        XCTAssertTrue(!streamPartials.isEmpty || !batchText.isEmpty,
+                      "Should produce text from mic audio via streaming or batch")
     }
 
     func testDebugWavLoading() throws {
@@ -216,6 +217,223 @@ final class E2EDictateDemoTests: XCTestCase {
             let speechRms = sqrt(audio[16000..<17600].reduce(0) { $0 + $1 * $1 } / 1600)
             print("Speech rms at 1s: \(speechRms)")
         }
+    }
+
+    // MARK: - Pipeline Simulation (mirrors DictateDemo's ASRProcessor)
+
+    /// Mirrors the VAD + force-finalize pipeline in DictateDemo's ASRProcessor.
+    /// Duplicated here (rather than @testable imported) because ASRProcessor
+    /// lives in the executable target. Keep the two in sync — if this drifts,
+    /// the test stops guarding the real pipeline.
+    ///
+    /// - Parameters:
+    ///   - audio: mono 16kHz Float32 samples
+    ///   - timerChunkSamples: samples per simulated timer tick (default 4800 = 300ms)
+    ///   - forceFinalizeSilentVadChunks: VAD silence threshold before force-finalize (default 30 ≈ 960ms)
+    /// - Returns: list of committed final texts in order
+    private func simulateDictateDemoPipeline(
+        audio: [Float],
+        timerChunkSamples: Int = 4800,
+        forceFinalizeSilentVadChunks: Int = 30
+    ) throws -> [String] {
+        guard let model = Self.model, let vad = Self.vad else {
+            throw XCTSkip("Models not loaded")
+        }
+        vad.resetState()
+        let session = try model.createSession()
+
+        var vadLeftover: [Float] = []
+        var speechActive = false
+        var silenceCount = 0
+        var hasPendingUtterance = false
+        var finals: [String] = []
+
+        var offset = 0
+        while offset < audio.count {
+            let end = min(offset + timerChunkSamples, audio.count)
+            let chunk = Array(audio[offset..<end])
+            offset = end
+
+            // VAD on 512-sample chunks with leftover carry-over.
+            var vadInput = vadLeftover
+            vadInput.append(contentsOf: chunk)
+            var vadOffset = 0
+            while vadOffset + 512 <= vadInput.count {
+                let prob = vad.processChunk(Array(vadInput[vadOffset..<vadOffset+512]))
+                if prob >= 0.5 {
+                    speechActive = true
+                    silenceCount = 0
+                    hasPendingUtterance = true
+                } else {
+                    silenceCount += 1
+                    if silenceCount >= 15 { speechActive = false }
+                }
+                vadOffset += 512
+            }
+            vadLeftover = Array(vadInput[vadOffset...])
+
+            // ASR
+            var partials = try session.pushAudio(chunk)
+
+            // VAD force-finalize after sustained silence
+            if hasPendingUtterance && !speechActive && silenceCount >= forceFinalizeSilentVadChunks {
+                if let forced = session.forceEndOfUtterance() {
+                    partials.append(forced)
+                }
+                hasPendingUtterance = false
+            }
+
+            for p in partials where p.isFinal && !p.text.isEmpty {
+                finals.append(p.text)
+            }
+        }
+
+        for p in try session.finalize() where !p.text.isEmpty {
+            finals.append(p.text)
+        }
+        return finals
+    }
+
+    /// Load test audio and stitch two copies together with a gap of silence
+    /// between them, producing a deterministic multi-utterance fixture.
+    private func multiUtteranceFixture(gapSeconds: Double = 1.5) throws -> [Float] {
+        let testAudioURL = URL(fileURLWithPath: "../../Tests/ParakeetStreamingASRTests/Resources/test_audio.wav")
+        guard FileManager.default.fileExists(atPath: testAudioURL.path) else {
+            throw XCTSkip("test_audio.wav not found at \(testAudioURL.path)")
+        }
+        let clip = try AudioFileLoader.load(url: testAudioURL, targetSampleRate: 16000)
+        let silence = [Float](repeating: 0, count: Int(Double(16000) * gapSeconds))
+        return clip + silence + clip
+    }
+
+    /// Diagnostic: print the event trace so we can see why the second
+    /// utterance doesn't produce a final.
+    func testPipelineDiagnostic() throws {
+        guard let model = Self.model, let vad = Self.vad else {
+            throw XCTSkip("Models not loaded")
+        }
+        let audio = try multiUtteranceFixture(gapSeconds: 1.5)
+        print("Audio: \(audio.count) samples (\(Double(audio.count)/16000)s)")
+
+        vad.resetState()
+        let session = try model.createSession()
+
+        var vadLeftover: [Float] = []
+        var speechActive = false
+        var silenceCount = 0
+        var hasPendingUtterance = false
+
+        let timerChunk = 4800
+        var offset = 0
+        var tick = 0
+        while offset < audio.count {
+            let end = min(offset + timerChunk, audio.count)
+            let chunk = Array(audio[offset..<end])
+            offset = end
+            tick += 1
+
+            // VAD
+            var vadInput = vadLeftover
+            vadInput.append(contentsOf: chunk)
+            var vadOffset = 0
+            var speechChunksInTick = 0
+            while vadOffset + 512 <= vadInput.count {
+                let prob = vad.processChunk(Array(vadInput[vadOffset..<vadOffset+512]))
+                if prob >= 0.5 {
+                    speechActive = true
+                    silenceCount = 0
+                    hasPendingUtterance = true
+                    speechChunksInTick += 1
+                } else {
+                    silenceCount += 1
+                    if silenceCount >= 15 { speechActive = false }
+                }
+                vadOffset += 512
+            }
+            vadLeftover = Array(vadInput[vadOffset...])
+
+            // ASR
+            var partials = try session.pushAudio(chunk)
+
+            var forcedText: String? = nil
+            if hasPendingUtterance && !speechActive && silenceCount >= 30 {
+                if let forced = session.forceEndOfUtterance() {
+                    forcedText = forced.text
+                    partials.append(forced)
+                }
+                hasPendingUtterance = false
+            }
+
+            let partialSummary = partials.map { "[\($0.isFinal ? "F" : "P")] '\($0.text)'" }.joined(separator: " | ")
+            print("tick=\(tick) speech=\(speechChunksInTick) silence=\(silenceCount) vad=\(speechActive) pend=\(hasPendingUtterance) partials=\(partials.count) \(partialSummary) \(forcedText.map { "FORCED='\($0)'" } ?? "")")
+        }
+        let endFinals = try session.finalize()
+        print("finalize(): \(endFinals.map { "[\($0.isFinal ? "F" : "P")] '\($0.text)'" })")
+    }
+
+    /// Two utterances separated by silence should produce two separate finals
+    /// committed via the VAD force-finalize path (not waiting for model EOU).
+    func testMultiUtteranceForceFinalize() throws {
+        let audio = try multiUtteranceFixture(gapSeconds: 1.5)
+        let finals = try simulateDictateDemoPipeline(audio: audio)
+
+        print("Pipeline finals: \(finals)")
+        XCTAssertGreaterThanOrEqual(finals.count, 2,
+            "Expected ≥2 finals (one per utterance), got \(finals.count): \(finals)")
+        for text in finals {
+            XCTAssertFalse(text.isEmpty, "Finals must have non-empty text")
+        }
+    }
+
+    /// Regression for the "stuck EOU flag" bug — when the joint detected EOU
+    /// during inter-sentence silence with no pending tokens, the flag stayed
+    /// true and prematurely finalized the first tokens of the next utterance.
+    /// The fix was to clear eouDetected in the empty-text early return path.
+    ///
+    /// We verify this indirectly: the second final must not be just a tiny
+    /// fragment of the second utterance (as would happen if it fired on the
+    /// first few tokens).
+    func testSecondUtteranceNotPrematurelyFinalized() throws {
+        let audio = try multiUtteranceFixture(gapSeconds: 1.5)
+        let finals = try simulateDictateDemoPipeline(audio: audio)
+
+        guard finals.count >= 2 else {
+            XCTFail("Need ≥2 finals for this test, got \(finals.count)")
+            return
+        }
+        // Both utterances are copies of the same clip, so the second final
+        // should be comparable in length to the first (within 50%).
+        let firstWords = finals[0].split(separator: " ").count
+        let secondWords = finals[1].split(separator: " ").count
+        XCTAssertGreaterThanOrEqual(secondWords, max(1, firstWords / 2),
+            "Second utterance was prematurely finalized: first='\(finals[0])' (\(firstWords)w), second='\(finals[1])' (\(secondWords)w)")
+    }
+
+    /// Regression for the noise-in-silence bug — brief noise spikes during
+    /// the inter-sentence pause kept resetting the joint's EOU debounce timer,
+    /// so the second sentence stayed stuck as a partial for ~6s. The VAD-based
+    /// force-finalize bypasses the joint's timer entirely.
+    func testNoiseInSilenceDoesNotBlockFinalize() throws {
+        let testAudioURL = URL(fileURLWithPath: "../../Tests/ParakeetStreamingASRTests/Resources/test_audio.wav")
+        guard FileManager.default.fileExists(atPath: testAudioURL.path) else {
+            throw XCTSkip("test_audio.wav not found")
+        }
+        let clip = try AudioFileLoader.load(url: testAudioURL, targetSampleRate: 16000)
+
+        // 1.5s of low-amplitude noise (mimics room tone / desk taps / mouse clicks)
+        var noisyGap = [Float](repeating: 0, count: Int(16000 * 1.5))
+        var rng = SystemRandomNumberGenerator()
+        for i in 0..<noisyGap.count {
+            let r = Float(rng.next() % 1000) / 1000.0 - 0.5
+            noisyGap[i] = r * 0.04  // rms ~0.02 — matches the log we saw
+        }
+
+        let audio = clip + noisyGap + clip
+        let finals = try simulateDictateDemoPipeline(audio: audio)
+
+        print("Noisy-gap finals: \(finals)")
+        XCTAssertGreaterThanOrEqual(finals.count, 2,
+            "VAD force-finalize should commit both utterances even with noise in the gap, got: \(finals)")
     }
 
     // MARK: - Latency

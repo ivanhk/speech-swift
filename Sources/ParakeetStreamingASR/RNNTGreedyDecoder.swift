@@ -56,6 +56,7 @@ struct RNNTGreedyDecoder {
     func decode(
         encoded: MLMultiArray,
         encodedLength: Int,
+        frameOffset: Int = 0,
         h: inout MLMultiArray,
         c: inout MLMultiArray,
         decoderOutput: inout MLMultiArray,
@@ -72,9 +73,10 @@ struct RNNTGreedyDecoder {
         let tokenPtr = tokenArray.dataPointer.assumingMemoryBound(to: Int32.self)
         let totalClasses = config.vocabSize + 1  // vocab + blank
 
-        for t in 0..<encodedLength {
-            // Extract encoder frame at position t — encoder output is [1, D, T] (channels-first)
-            copyEncoderFrame(from: encoded, at: t, to: encSlice)
+        for i in 0..<encodedLength {
+            let t = i + frameOffset
+            // Extract encoder frame at position t — encoder output is [1, T, D] fp16
+            copyEncoderFrameFP16(from: encoded, at: t, toFP32: encSlice)
 
             for _ in 0..<maxSymbolsPerStep {
                 // Joint network: (encoder_slice, decoder_output) → logits
@@ -105,9 +107,13 @@ struct RNNTGreedyDecoder {
                 decoderProvider.update("h", h)
                 decoderProvider.update("c", c)
                 let decOut = try decoder.prediction(from: decoderProvider)
-                decoderOutput = decOut.featureValue(for: "decoder_output")!.multiArrayValue!
-                h = decOut.featureValue(for: "h_out")!.multiArrayValue!
-                c = decOut.featureValue(for: "c_out")!.multiArrayValue!
+                // Model outputs are fp16; copy-cast into our fp32 input buffers
+                StreamingSession.copyCastFP16ToFP32(
+                    decOut.featureValue(for: "decoder_output")!.multiArrayValue!, into: decoderOutput)
+                StreamingSession.copyCastFP16ToFP32(
+                    decOut.featureValue(for: "h_out")!.multiArrayValue!, into: h)
+                StreamingSession.copyCastFP16ToFP32(
+                    decOut.featureValue(for: "c_out")!.multiArrayValue!, into: c)
             }
 
             if eouDetected { break }
@@ -118,22 +124,23 @@ struct RNNTGreedyDecoder {
 
     // MARK: - Array Operations
 
-    /// Copy encoder frame at time `t` from [B, T, D] layout.
-    /// Output slice is [1, 1, D] for joint network input.
-    private func copyEncoderFrame(from encoded: MLMultiArray, at t: Int, to slice: MLMultiArray) {
+    /// Copy encoder frame at time `t` from [1, T, D] fp16 layout, casting to fp32.
+    private func copyEncoderFrameFP16(from encoded: MLMultiArray, at t: Int, toFP32 slice: MLMultiArray) {
         let hidden = config.encoderHidden
-        // encoded is [1, T, D] — frame t is contiguous at offset t * D
-        let src = encoded.dataPointer.advanced(by: t * hidden * MemoryLayout<Float16>.stride)
-        memcpy(slice.dataPointer, src, hidden * MemoryLayout<Float16>.stride)
+        // encoded is [1, T, D] fp16 — frame t is contiguous at offset t * D
+        let src = encoded.dataPointer.assumingMemoryBound(to: Float16.self).advanced(by: t * hidden)
+        let dst = slice.dataPointer.assumingMemoryBound(to: Float.self)
+        for i in 0..<hidden { dst[i] = Float(src[i]) }
     }
 
     private func logSoftmax(_ array: MLMultiArray, tokenId: Int, count: Int, floatBuf: UnsafeMutablePointer<Float>) -> Float {
-        let ptr = array.dataPointer.assumingMemoryBound(to: Float16.self)
-        for i in 0..<count { floatBuf[i] = Float(ptr[i]) }
+        loadFP16AsFloat(array, count: count, into: floatBuf)
 
         var maxVal: Float = 0
         var maxIdx: vDSP_Length = 0
         vDSP_maxvi(floatBuf, 1, &maxVal, &maxIdx, vDSP_Length(count))
+
+        let logitForToken = floatBuf[tokenId]
 
         var negMax = -maxVal
         vDSP_vsadd(floatBuf, 1, &negMax, floatBuf, 1, vDSP_Length(count))
@@ -145,16 +152,20 @@ struct RNNTGreedyDecoder {
         vDSP_sve(floatBuf, 1, &sumExp, vDSP_Length(count))
 
         let logSumExp = log(sumExp) + maxVal
-        let logit = Float(ptr[tokenId])
-        return logit - logSumExp
+        return logitForToken - logSumExp
     }
 
     private func argmax(_ array: MLMultiArray, count: Int, floatBuf: UnsafeMutablePointer<Float>) -> Int {
-        let ptr = array.dataPointer.assumingMemoryBound(to: Float16.self)
-        for i in 0..<count { floatBuf[i] = Float(ptr[i]) }
+        loadFP16AsFloat(array, count: count, into: floatBuf)
         var maxVal: Float = 0
         var maxIdx: vDSP_Length = 0
         vDSP_maxvi(floatBuf, 1, &maxVal, &maxIdx, vDSP_Length(count))
         return Int(maxIdx)
+    }
+
+    /// Load `count` elements from a fp16 MLMultiArray into a fp32 buffer.
+    private func loadFP16AsFloat(_ array: MLMultiArray, count: Int, into buf: UnsafeMutablePointer<Float>) {
+        let ptr = array.dataPointer.assumingMemoryBound(to: Float16.self)
+        for i in 0..<count { buf[i] = Float(ptr[i]) }
     }
 }

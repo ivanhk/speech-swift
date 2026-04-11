@@ -4,9 +4,9 @@ import Observation
 import ParakeetStreamingASR
 import SpeechVAD
 
-private let logPath = "/tmp/dictate.log"
-private let logLock = NSLock()
-private func dlog(_ msg: String) {
+let logPath = "/tmp/dictate.log"
+let logLock = NSLock()
+func dlog(_ msg: String) {
     logLock.lock()
     defer { logLock.unlock() }
     if let data = "\(msg)\n".data(using: .utf8) {
@@ -24,19 +24,30 @@ final class ASRProcessor: Sendable {
     private let vad: SileroVADModel
     private let lock = NSLock()
     private let _buffer = UnsafeMutablePointer<[Float]>.allocate(capacity: 1)
+    private let _vadLeftover = UnsafeMutablePointer<[Float]>.allocate(capacity: 1)
     nonisolated(unsafe) var speechActive = false
+    nonisolated(unsafe) var silenceCount = 0
+    nonisolated(unsafe) var hasPendingUtterance = false
     nonisolated(unsafe) var smoothGain: Float = 1.0
     nonisolated(unsafe) var lastRms: Float = 0
     nonisolated(unsafe) var lastNormRms: Float = 0
+
+    // VAD silence chunks (512 samples @ 16kHz = 32ms) before we force-finalize.
+    // 30 chunks ≈ 960ms — long enough to avoid mid-sentence cutoff, short
+    // enough that the UI commits promptly after speech ends.
+    private let forceFinalizeSilentChunks = 30
 
     init(session: StreamingSession, vad: SileroVADModel) {
         self.session = session
         self.vad = vad
         _buffer.initialize(to: [])
+        _vadLeftover.initialize(to: [])
         _allAudio.initialize(to: [])
+        vad.resetState()
     }
     deinit {
         _buffer.deinitialize(count: 1); _buffer.deallocate()
+        _vadLeftover.deinitialize(count: 1); _vadLeftover.deallocate()
         _allAudio.deinitialize(count: 1); _allAudio.deallocate()
     }
 
@@ -108,22 +119,59 @@ final class ASRProcessor: Sendable {
         // No normalization — FluidAudio feeds raw mic audio directly.
         // The model should handle normal mic levels.
 
-        // VAD on normalized audio
+        // VAD: carry leftover samples across calls so the stateful LSTM
+        // sees a continuous stream. Chunks are exactly 512 samples.
+        lock.lock()
+        var vadInput = _vadLeftover.pointee
+        vadInput.append(contentsOf: normalized)
+        lock.unlock()
         var offset = 0
-        var silenceCount = 0
-        while offset + 512 <= normalized.count {
-            let prob = vad.processChunk(Array(normalized[offset..<offset+512]))
-            if prob >= 0.5 { speechActive = true; silenceCount = 0 }
-            else { silenceCount += 1; if silenceCount >= 15 { speechActive = false } }
+        while offset + 512 <= vadInput.count {
+            let prob = vad.processChunk(Array(vadInput[offset..<offset+512]))
+            if prob >= 0.5 {
+                speechActive = true
+                silenceCount = 0
+                hasPendingUtterance = true
+            } else {
+                silenceCount += 1
+                if silenceCount >= 15 { speechActive = false }
+            }
             offset += 512
         }
+        let leftover = Array(vadInput[offset...])
+        lock.lock()
+        _vadLeftover.pointee = leftover
+        lock.unlock()
 
         // ASR on normalized audio
         lastRms = rms
         lastNormRms = rms  // Same as raw — no normalization
         do {
             self.appendDebugAudio(normalized)
-            let partials = try session.pushAudio(normalized)
+            var partials = try session.pushAudio(normalized)
+
+            // If the joint already finalized the utterance on its own (via
+            // its EOU head), mark the utterance as handled so we don't then
+            // also force-finalize and duplicate the sentence.
+            if partials.contains(where: { $0.isFinal }) {
+                hasPendingUtterance = false
+            }
+
+            // VAD-driven force finalize: if speech has ended and we have
+            // an utterance pending, emit a final before the joint's EOU
+            // debounce eventually fires. Noise during "silence" keeps the
+            // joint's EOU timer resetting, so VAD is more reliable here.
+            if hasPendingUtterance
+                && !speechActive
+                && silenceCount >= forceFinalizeSilentChunks
+            {
+                if let forced = session.forceEndOfUtterance() {
+                    dlog("FORCE-FINAL via VAD: '\(forced.text)'")
+                    partials.append(forced)
+                }
+                hasPendingUtterance = false
+            }
+
             dlog("asr: rms=\(String(format:"%.4f",rms)) vad=\(speechActive) partials=\(partials.count)")
             if !partials.isEmpty {
                 dlog("ASR: \(partials.count) partials — '\(partials.map { $0.text }.joined(separator: ", "))'")
@@ -142,21 +190,24 @@ final class ASRProcessor: Sendable {
     }
 }
 
-@Observable
 @MainActor
-final class DictateViewModel {
-    var sentences: [String] = []
-    var partialText = ""
-    var lastCommittedText = ""  // Track what's been committed to extract deltas
-    var isRecording = false
-    var isLoading = false
-    var loadingStatus = ""
-    var errorMessage: String?
-    var isSpeechActive = false
-    var debugAudioRms: Float = 0
-    var debugNormRms: Float = 0
-    var debugChunksProcessed: Int = 0
-    var debugPartialsReceived: Int = 0
+final class DictateViewModel: ObservableObject {
+    // Using ObservableObject + @Published (Combine) rather than @Observable
+    // because @Observable's ObservationRegistrar does not reliably trigger
+    // SwiftUI re-renders inside a MenuBarExtra popover (NSHostingView inside
+    // NSPopover). @Published + @StateObject pumps through Combine and works.
+    @Published var sentences: [String] = []
+    @Published var partialText = ""
+    @Published var lastCommittedText = ""  // Track what's been committed to extract deltas
+    @Published var isRecording = false
+    @Published var isLoading = false
+    @Published var loadingStatus = ""
+    @Published var errorMessage: String?
+    @Published var isSpeechActive = false
+    @Published var debugAudioRms: Float = 0
+    @Published var debugNormRms: Float = 0
+    @Published var debugChunksProcessed: Int = 0
+    @Published var debugPartialsReceived: Int = 0
 
     private var model: ParakeetStreamingASRModel?
     private var vad: SileroVADModel?
@@ -236,19 +287,29 @@ final class DictateViewModel {
                 let count = proc.bufferedCount
                 if count > 0 { dlog("timer: \(count) buffered") }
                 let (partials, speaking) = proc.processBuffered()
-                DispatchQueue.main.async {
-                    self?.isSpeechActive = speaking
-                    self?.debugAudioRms = proc.lastRms
-                    self?.debugNormRms = proc.lastNormRms
-                    self?.debugChunksProcessed = (self?.debugChunksProcessed ?? 0) + 1
-                    self?.debugPartialsReceived = (self?.debugPartialsReceived ?? 0) + partials.count
-                    for partial in partials {
-                        if partial.isFinal && !partial.text.isEmpty {
-                            dlog("FINAL: '\(partial.text)'")
-                            self?.sentences.append(partial.text)
-                            self?.partialText = ""
-                        } else if !partial.text.isEmpty {
-                            self?.partialText = partial.text
+                let rms = proc.lastRms
+                let normRms = proc.lastNormRms
+                // Schedule the UI update via RunLoop.main.perform in every
+                // relevant mode so it pumps through regardless of which mode
+                // a MenuBarExtra popover has the main loop in. Both
+                // DispatchQueue.main and Task{@MainActor} target only the
+                // default mode and get starved while the popover is open.
+                let weakSelf = self
+                RunLoop.main.perform(inModes: [.common, .default, .eventTracking, .modalPanel]) {
+                    MainActor.assumeIsolated {
+                        guard let self = weakSelf else { return }
+                        self.isSpeechActive = speaking
+                        self.debugAudioRms = rms
+                        self.debugNormRms = normRms
+                        self.debugChunksProcessed += 1
+                        self.debugPartialsReceived += partials.count
+                        for partial in partials {
+                            if partial.isFinal && !partial.text.isEmpty {
+                                self.sentences.append(partial.text)
+                                self.partialText = ""
+                            } else if !partial.text.isEmpty {
+                                self.partialText = partial.text
+                            }
                         }
                     }
                 }
