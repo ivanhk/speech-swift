@@ -119,6 +119,44 @@ final class TranscribeCommandTests: XCTestCase {
             XCTAssertEqual(AudioCLI.exitCode(for: error), .success)
         }
     }
+
+    // MARK: --engine omnilingual
+
+    func testParsesOmnilingualEngine() throws {
+        let cmd = try AudioCLI.parseAsRoot(["transcribe", "audio.wav", "--engine", "omnilingual"])
+        let transcribe = try XCTUnwrap(cmd as? TranscribeCommand)
+        XCTAssertEqual(transcribe.engine, "omnilingual")
+    }
+
+    func testOmnilingualDefaultWindowIs10() throws {
+        let cmd = try AudioCLI.parseAsRoot(["transcribe", "audio.wav", "--engine", "omnilingual"])
+        let transcribe = try XCTUnwrap(cmd as? TranscribeCommand)
+        XCTAssertEqual(transcribe.window, 10)
+    }
+
+    func testOmnilingualParses5sWindow() throws {
+        let cmd = try AudioCLI.parseAsRoot([
+            "transcribe", "audio.wav", "--engine", "omnilingual", "--window", "5"
+        ])
+        let transcribe = try XCTUnwrap(cmd as? TranscribeCommand)
+        XCTAssertEqual(transcribe.window, 5)
+    }
+
+    func testOmnilingualRejectsInvalidWindow() {
+        XCTAssertThrowsError(try {
+            let cmd = try AudioCLI.parseAsRoot([
+                "transcribe", "audio.wav", "--engine", "omnilingual", "--window", "7"
+            ])
+            try (cmd as? TranscribeCommand)?.validate()
+        }())
+    }
+
+    func testRejectsUnknownEngine() {
+        XCTAssertThrowsError(try {
+            let cmd = try AudioCLI.parseAsRoot(["transcribe", "audio.wav", "--engine", "bogus"])
+            try (cmd as? TranscribeCommand)?.validate()
+        }())
+    }
 }
 
 // MARK: - AlignCommand

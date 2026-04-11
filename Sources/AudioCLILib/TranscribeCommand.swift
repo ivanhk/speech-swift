@@ -2,6 +2,7 @@ import Foundation
 import ArgumentParser
 import Qwen3ASR
 import ParakeetASR
+import OmnilingualASR
 import SpeechVAD
 import AudioCommon
 
@@ -14,8 +15,11 @@ public struct TranscribeCommand: ParsableCommand {
     @Argument(help: "Audio file to transcribe (WAV, any sample rate)")
     public var audioFile: String
 
-    @Option(name: .long, help: "ASR engine: qwen3 (default), parakeet, qwen3-coreml, or qwen3-coreml-full")
+    @Option(name: .long, help: "ASR engine: qwen3 (default), parakeet, omnilingual, qwen3-coreml, or qwen3-coreml-full")
     public var engine: String = "qwen3"
+
+    @Option(name: .long, help: "[omnilingual] Window size in seconds: 5 or 10 (default 10)")
+    public var window: Int = 10
 
     @Option(name: .shortAndLong, help: "[qwen3] Model: 0.6B (default), 0.6B-8bit, 1.7B, 1.7B-4bit, or full HuggingFace model ID")
     public var model: String = "0.6B"
@@ -39,8 +43,11 @@ public struct TranscribeCommand: ParsableCommand {
 
     public func validate() throws {
         let eng = engine.lowercased()
-        guard eng == "qwen3" || eng == "parakeet" || eng == "qwen3-coreml" || eng == "qwen3-coreml-full" else {
-            throw ValidationError("--engine must be 'qwen3', 'parakeet', 'qwen3-coreml', or 'qwen3-coreml-full'")
+        guard eng == "qwen3" || eng == "parakeet" || eng == "omnilingual" || eng == "qwen3-coreml" || eng == "qwen3-coreml-full" else {
+            throw ValidationError("--engine must be 'qwen3', 'parakeet', 'omnilingual', 'qwen3-coreml', or 'qwen3-coreml-full'")
+        }
+        if eng == "omnilingual" && window != 5 && window != 10 {
+            throw ValidationError("--window must be 5 or 10 for omnilingual")
         }
     }
 
@@ -48,6 +55,8 @@ public struct TranscribeCommand: ParsableCommand {
         switch engine.lowercased() {
         case "parakeet":
             try runParakeetTranscription()
+        case "omnilingual":
+            try runOmnilingualTranscription()
         case "qwen3-coreml":
             try runCoreMLTranscription()
         case "qwen3-coreml-full":
@@ -220,6 +229,37 @@ public struct TranscribeCommand: ParsableCommand {
             print("Transcribing...")
             let startTime = CFAbsoluteTimeGetCurrent()
             let result = try parakeetModel.transcribeAudio(audio, sampleRate: 16000, language: language)
+            let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+            let rtf = elapsed / Double(duration)
+
+            print("Result: \(result)")
+            print(String(format: "  Time: %.2fs, RTF: %.3f (warmup: %.2fs)", elapsed, rtf, warmupTime))
+        }
+    }
+
+    private func runOmnilingualTranscription() throws {
+        try runAsync {
+            print("Loading audio: \(audioFile)")
+            let audio = try AudioFileLoader.load(
+                url: URL(fileURLWithPath: audioFile), targetSampleRate: 16000)
+            let duration = Float(audio.count) / 16000.0
+            print("  Loaded \(audio.count) samples (\(String(format: "%.2f", duration))s)")
+
+            let modelId = window == 5
+                ? OmnilingualASRModel.shortWindowModelId
+                : OmnilingualASRModel.defaultModelId
+            print("Loading Omnilingual ASR model (\(window)s window): \(modelId)")
+            let model = try await OmnilingualASRModel.fromPretrained(
+                modelId: modelId, progressHandler: reportProgress)
+
+            print("Warming up CoreML...")
+            let warmupStart = CFAbsoluteTimeGetCurrent()
+            try model.warmUp()
+            let warmupTime = CFAbsoluteTimeGetCurrent() - warmupStart
+
+            print("Transcribing...")
+            let startTime = CFAbsoluteTimeGetCurrent()
+            let result = try model.transcribeAudio(audio, sampleRate: 16000)
             let elapsed = CFAbsoluteTimeGetCurrent() - startTime
             let rtf = elapsed / Double(duration)
 
