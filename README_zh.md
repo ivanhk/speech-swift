@@ -6,22 +6,22 @@
 
 端侧语音识别、合成与理解，适用于 Mac 与 iOS。完全在 Apple Silicon 上本地运行——无需云端、无需 API 密钥、数据不出设备。
 
-**[📚 完整文档 →](https://soniqo.audio)** · **[🤗 HuggingFace 模型](https://huggingface.co/aufklarer)** · **[📝 博客](https://blog.ivan.digital)**
+**[📚 完整文档 →](https://soniqo.audio/zh)** · **[🤗 HuggingFace 模型](https://huggingface.co/aufklarer)** · **[📝 博客](https://blog.ivan.digital)**
 
-- **[Qwen3-ASR](https://soniqo.audio/guides/transcribe)** — 语音转文字（自动语音识别，52 种语言，MLX + CoreML）
-- **[Parakeet TDT](https://soniqo.audio/guides/parakeet)** — 通过 CoreML 进行语音转文字（神经引擎，NVIDIA FastConformer + TDT 解码器，25 种语言）
-- **[Omnilingual ASR](https://soniqo.audio/guides/omnilingual)** — 语音转文字（Meta wav2vec2 + CTC，**1,672 种语言**，覆盖 32 种文字系统，CoreML 300M + MLX 300M/1B/3B/7B）
-- **[流式听写](https://soniqo.audio/guides/dictate)** — 带部分结果和句末检测的实时听写（Parakeet-EOU-120M）
-- **[Qwen3-ForcedAligner](https://soniqo.audio/guides/align)** — 词级时间戳对齐（音频 + 文本 → 时间戳）
-- **[Qwen3-TTS](https://soniqo.audio/guides/speak)** — 文本转语音（最高质量、流式输出、自定义说话人，10 种语言）
-- **[CosyVoice TTS](https://soniqo.audio/guides/cosyvoice)** — 流式 TTS，支持声音克隆、多说话人对话、情感标签（9 种语言）
-- **[Kokoro TTS](https://soniqo.audio/guides/kokoro)** — 端侧 TTS（82M，CoreML/神经引擎，54 种音色，iOS 就绪，10 种语言）
-- **[Qwen3.5-Chat](https://soniqo.audio/guides/chat)** — 端侧 LLM 对话（0.8B，MLX INT4 + CoreML INT8，DeltaNet 混合架构，流式 token）
-- **[PersonaPlex](https://soniqo.audio/guides/respond)** — 全双工语音到语音（7B，音频输入 → 音频输出，18 种预设音色）
-- **[DeepFilterNet3](https://soniqo.audio/guides/denoise)** — 实时噪声抑制（2.1M 参数，48 kHz）
-- **[VAD](https://soniqo.audio/guides/vad)** — 语音活动检测（Silero 流式、Pyannote 离线、FireRedVAD 100+ 种语言）
-- **[说话人分离](https://soniqo.audio/guides/diarize)** — 谁在什么时间说话（Pyannote 流水线，神经引擎上的端到端 Sortformer）
-- **[说话人嵌入向量](https://soniqo.audio/guides/embed-speaker)** — WeSpeaker ResNet34（256 维）、CAM++（192 维）
+- **[Qwen3-ASR](https://soniqo.audio/zh/guides/transcribe)** — 语音转文字（自动语音识别，52 种语言，MLX + CoreML）
+- **[Parakeet TDT](https://soniqo.audio/zh/guides/parakeet)** — 通过 CoreML 进行语音转文字（神经引擎，NVIDIA FastConformer + TDT 解码器，25 种语言）
+- **[Omnilingual ASR](https://soniqo.audio/zh/guides/omnilingual)** — 语音转文字（Meta wav2vec2 + CTC，**1,672 种语言**，覆盖 32 种文字系统，CoreML 300M + MLX 300M/1B/3B/7B）
+- **[流式听写](https://soniqo.audio/zh/guides/dictate)** — 带部分结果和句末检测的实时听写（Parakeet-EOU-120M）
+- **[Qwen3-ForcedAligner](https://soniqo.audio/zh/guides/align)** — 词级时间戳对齐（音频 + 文本 → 时间戳）
+- **[Qwen3-TTS](https://soniqo.audio/zh/guides/speak)** — 文本转语音（最高质量、流式输出、自定义说话人，10 种语言）
+- **[CosyVoice TTS](https://soniqo.audio/zh/guides/cosyvoice)** — 流式 TTS，支持声音克隆、多说话人对话、情感标签（9 种语言）
+- **[Kokoro TTS](https://soniqo.audio/zh/guides/kokoro)** — 端侧 TTS（82M，CoreML/神经引擎，54 种音色，iOS 就绪，10 种语言）
+- **[Qwen3.5-Chat](https://soniqo.audio/zh/guides/chat)** — 端侧 LLM 对话（0.8B，MLX INT4 + CoreML INT8，DeltaNet 混合架构，流式 token）
+- **[PersonaPlex](https://soniqo.audio/zh/guides/respond)** — 全双工语音到语音（7B，音频输入 → 音频输出，18 种预设音色）
+- **[DeepFilterNet3](https://soniqo.audio/zh/guides/denoise)** — 实时噪声抑制（2.1M 参数，48 kHz）
+- **[VAD](https://soniqo.audio/zh/guides/vad)** — 语音活动检测（Silero 流式、Pyannote 离线、FireRedVAD 100+ 种语言）
+- **[说话人分离](https://soniqo.audio/zh/guides/diarize)** — 谁在什么时间说话（Pyannote 流水线，神经引擎上的端到端 Sortformer）
+- **[说话人嵌入向量](https://soniqo.audio/zh/guides/embed-speaker)** — WeSpeaker ResNet34（256 维）、CAM++（192 维）
 
 论文：[Qwen3-ASR](https://arxiv.org/abs/2601.21337) (Alibaba) · [Qwen3-TTS](https://arxiv.org/abs/2601.15621) (Alibaba) · [Omnilingual ASR](https://arxiv.org/abs/2511.09690) (Meta) · [Parakeet TDT](https://arxiv.org/abs/2304.06795) (NVIDIA) · [CosyVoice 3](https://arxiv.org/abs/2505.17589) (Alibaba) · [Kokoro](https://arxiv.org/abs/2301.01695) (StyleTTS 2) · [PersonaPlex](https://arxiv.org/abs/2602.06053) (NVIDIA) · [Mimi](https://arxiv.org/abs/2410.00037) (Kyutai) · [Sortformer](https://arxiv.org/abs/2409.06656) (NVIDIA)
 
@@ -94,25 +94,25 @@ struct DictateView: View {
 
 ## 模型
 
-下方是精简视图。**[完整模型目录（含大小、量化方式、下载地址、内存表）→ soniqo.audio/architecture](https://soniqo.audio/architecture)**。
+下方是精简视图。**[完整模型目录（含大小、量化方式、下载地址、内存表）→ soniqo.audio/architecture](https://soniqo.audio/zh/architecture)**。
 
 | 模型 | 任务 | 后端 | 大小 | 语言 |
 |-------|------|----------|-------|-----------|
-| [Qwen3-ASR](https://soniqo.audio/guides/transcribe) | 语音 → 文字 | MLX、CoreML（混合） | 0.6B、1.7B | 52 |
-| [Parakeet TDT](https://soniqo.audio/guides/parakeet) | 语音 → 文字 | CoreML (ANE) | 0.6B | 25 种欧洲语言 |
-| [Parakeet EOU](https://soniqo.audio/guides/dictate) | 语音 → 文字（流式） | CoreML (ANE) | 120M | 25 种欧洲语言 |
-| [Omnilingual ASR](https://soniqo.audio/guides/omnilingual) | 语音 → 文字 | CoreML (ANE)、MLX | 300M / 1B / 3B / 7B | **[1,672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
-| [Qwen3-ForcedAligner](https://soniqo.audio/guides/align) | 音频 + 文本 → 时间戳 | MLX、CoreML | 0.6B | 多语言 |
-| [Qwen3-TTS](https://soniqo.audio/guides/speak) | 文本 → 语音 | MLX、CoreML | 0.6B、1.7B | 10 |
-| [CosyVoice3](https://soniqo.audio/guides/cosyvoice) | 文本 → 语音 | MLX | 0.5B | 9 |
-| [Kokoro-82M](https://soniqo.audio/guides/kokoro) | 文本 → 语音 | CoreML (ANE) | 82M | 10 |
-| [Qwen3.5-Chat](https://soniqo.audio/guides/chat) | 文本 → 文本（LLM） | MLX、CoreML | 0.8B | 多语言 |
-| [PersonaPlex](https://soniqo.audio/guides/respond) | 语音 → 语音 | MLX | 7B | EN |
-| [Silero VAD](https://soniqo.audio/guides/vad) | 语音活动检测 | MLX、CoreML | 309K | 语言无关 |
-| [Pyannote](https://soniqo.audio/guides/diarize) | VAD + 说话人分离 | MLX | 1.5M | 语言无关 |
-| [Sortformer](https://soniqo.audio/guides/diarize) | 说话人分离（端到端） | CoreML (ANE) | — | 语言无关 |
-| [DeepFilterNet3](https://soniqo.audio/guides/denoise) | 语音增强 | CoreML | 2.1M | 语言无关 |
-| [WeSpeaker](https://soniqo.audio/guides/embed-speaker) | 说话人嵌入向量 | MLX、CoreML | 6.6M | 语言无关 |
+| [Qwen3-ASR](https://soniqo.audio/zh/guides/transcribe) | 语音 → 文字 | MLX、CoreML（混合） | 0.6B、1.7B | 52 |
+| [Parakeet TDT](https://soniqo.audio/zh/guides/parakeet) | 语音 → 文字 | CoreML (ANE) | 0.6B | 25 种欧洲语言 |
+| [Parakeet EOU](https://soniqo.audio/zh/guides/dictate) | 语音 → 文字（流式） | CoreML (ANE) | 120M | 25 种欧洲语言 |
+| [Omnilingual ASR](https://soniqo.audio/zh/guides/omnilingual) | 语音 → 文字 | CoreML (ANE)、MLX | 300M / 1B / 3B / 7B | **[1,672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
+| [Qwen3-ForcedAligner](https://soniqo.audio/zh/guides/align) | 音频 + 文本 → 时间戳 | MLX、CoreML | 0.6B | 多语言 |
+| [Qwen3-TTS](https://soniqo.audio/zh/guides/speak) | 文本 → 语音 | MLX、CoreML | 0.6B、1.7B | 10 |
+| [CosyVoice3](https://soniqo.audio/zh/guides/cosyvoice) | 文本 → 语音 | MLX | 0.5B | 9 |
+| [Kokoro-82M](https://soniqo.audio/zh/guides/kokoro) | 文本 → 语音 | CoreML (ANE) | 82M | 10 |
+| [Qwen3.5-Chat](https://soniqo.audio/zh/guides/chat) | 文本 → 文本（LLM） | MLX、CoreML | 0.8B | 多语言 |
+| [PersonaPlex](https://soniqo.audio/zh/guides/respond) | 语音 → 语音 | MLX | 7B | EN |
+| [Silero VAD](https://soniqo.audio/zh/guides/vad) | 语音活动检测 | MLX、CoreML | 309K | 语言无关 |
+| [Pyannote](https://soniqo.audio/zh/guides/diarize) | VAD + 说话人分离 | MLX | 1.5M | 语言无关 |
+| [Sortformer](https://soniqo.audio/zh/guides/diarize) | 说话人分离（端到端） | CoreML (ANE) | — | 语言无关 |
+| [DeepFilterNet3](https://soniqo.audio/zh/guides/denoise) | 语音增强 | CoreML | 2.1M | 语言无关 |
+| [WeSpeaker](https://soniqo.audio/zh/guides/embed-speaker) | 说话人嵌入向量 | MLX、CoreML | 6.6M | 语言无关 |
 
 ## 安装
 
@@ -133,7 +133,7 @@ audio speak "Hello world"
 audio respond --input question.wav --transcript
 ```
 
-**[完整 CLI 参考 →](https://soniqo.audio/cli)**
+**[完整 CLI 参考 →](https://soniqo.audio/zh/cli)**
 
 ### Swift Package Manager
 
@@ -176,11 +176,11 @@ make build
 
 `make build` 会同时编译 Swift 包**和** MLX Metal 着色器库。Metal 库是 GPU 推理所必需的——若缺失，运行时会出现 `Failed to load the default metallib`。`make debug` 用于调试构建，`make test` 运行测试套件。
 
-**[完整构建与安装指南 →](https://soniqo.audio/getting-started)**
+**[完整构建与安装指南 →](https://soniqo.audio/zh/getting-started)**
 
 ## 演示应用
 
-- **[DictateDemo](Examples/DictateDemo/)**（[文档](https://soniqo.audio/guides/dictate)）— macOS 菜单栏流式听写，带实时部分结果、VAD 驱动的句末检测、一键复制。以后台 agent 方式运行（Parakeet-EOU-120M + Silero VAD）。
+- **[DictateDemo](Examples/DictateDemo/)**（[文档](https://soniqo.audio/zh/guides/dictate)）— macOS 菜单栏流式听写，带实时部分结果、VAD 驱动的句末检测、一键复制。以后台 agent 方式运行（Parakeet-EOU-120M + Silero VAD）。
 - **[iOSEchoDemo](Examples/iOSEchoDemo/)** — iOS 回声 demo（Parakeet ASR + Kokoro TTS）。支持设备和模拟器。
 - **[PersonaPlexDemo](Examples/PersonaPlexDemo/)** — 带麦克风输入、VAD 和多轮上下文的对话式语音助手。macOS。M2 Max 上 RTF 约 0.94（快于实时）。
 - **[SpeechDemo](Examples/SpeechDemo/)** — 标签式界面中的听写与 TTS 合成。macOS。
@@ -189,9 +189,9 @@ make build
 
 ## 代码示例
 
-下方代码片段展示每个领域的最小使用路径。每一节都链接到 [soniqo.audio](https://soniqo.audio) 上的完整指南，涵盖配置选项、多种后端、流式模式和 CLI 示例。
+下方代码片段展示每个领域的最小使用路径。每一节都链接到 [soniqo.audio](https://soniqo.audio/zh) 上的完整指南，涵盖配置选项、多种后端、流式模式和 CLI 示例。
 
-### 语音转文字 — [完整指南 →](https://soniqo.audio/guides/transcribe)
+### 语音转文字 — [完整指南 →](https://soniqo.audio/zh/guides/transcribe)
 
 ```swift
 import Qwen3ASR
@@ -200,9 +200,9 @@ let model = try await Qwen3ASRModel.fromPretrained()
 let text = model.transcribe(audio: audioSamples, sampleRate: 16000)
 ```
 
-其他后端：[Parakeet TDT](https://soniqo.audio/guides/parakeet)（CoreML，32× 实时）、[Omnilingual ASR](https://soniqo.audio/guides/omnilingual)（1,672 种语言，CoreML 或 MLX）、[流式听写](https://soniqo.audio/guides/dictate)（实时部分结果）。
+其他后端：[Parakeet TDT](https://soniqo.audio/zh/guides/parakeet)（CoreML，32× 实时）、[Omnilingual ASR](https://soniqo.audio/zh/guides/omnilingual)（1,672 种语言，CoreML 或 MLX）、[流式听写](https://soniqo.audio/zh/guides/dictate)（实时部分结果）。
 
-### 强制对齐 — [完整指南 →](https://soniqo.audio/guides/align)
+### 强制对齐 — [完整指南 →](https://soniqo.audio/zh/guides/align)
 
 ```swift
 import Qwen3ASR
@@ -218,7 +218,7 @@ for word in aligned {
 }
 ```
 
-### 文本转语音 — [完整指南 →](https://soniqo.audio/guides/speak)
+### 文本转语音 — [完整指南 →](https://soniqo.audio/zh/guides/speak)
 
 ```swift
 import Qwen3TTS
@@ -229,9 +229,9 @@ let audio = model.synthesize(text: "Hello world", language: "english")
 try WAVWriter.write(samples: audio, sampleRate: 24000, to: outputURL)
 ```
 
-其他 TTS 引擎：[CosyVoice3](https://soniqo.audio/guides/cosyvoice)（流式 + 声音克隆 + 情感标签）、[Kokoro-82M](https://soniqo.audio/guides/kokoro)（iOS 就绪，54 种音色）、[声音克隆](https://soniqo.audio/guides/voice-cloning)。
+其他 TTS 引擎：[CosyVoice3](https://soniqo.audio/zh/guides/cosyvoice)（流式 + 声音克隆 + 情感标签）、[Kokoro-82M](https://soniqo.audio/zh/guides/kokoro)（iOS 就绪，54 种音色）、[声音克隆](https://soniqo.audio/zh/guides/voice-cloning)。
 
-### 语音到语音 — [完整指南 →](https://soniqo.audio/guides/respond)
+### 语音到语音 — [完整指南 →](https://soniqo.audio/zh/guides/respond)
 
 ```swift
 import PersonaPlex
@@ -241,7 +241,7 @@ let responseAudio = model.respond(userAudio: userSamples)
 // 24 kHz 单声道 Float32 输出，可直接播放
 ```
 
-### LLM 对话 — [完整指南 →](https://soniqo.audio/guides/chat)
+### LLM 对话 — [完整指南 →](https://soniqo.audio/zh/guides/chat)
 
 ```swift
 import Qwen3Chat
@@ -252,7 +252,7 @@ chat.chat(messages: [(.user, "Explain MLX in one sentence")]) { token, isFinal i
 }
 ```
 
-### 语音活动检测 — [完整指南 →](https://soniqo.audio/guides/vad)
+### 语音活动检测 — [完整指南 →](https://soniqo.audio/zh/guides/vad)
 
 ```swift
 import SpeechVAD
@@ -262,7 +262,7 @@ let segments = vad.detectSpeech(audio: samples, sampleRate: 16000)
 for s in segments { print("\(s.startTime)s → \(s.endTime)s") }
 ```
 
-### 说话人分离 — [完整指南 →](https://soniqo.audio/guides/diarize)
+### 说话人分离 — [完整指南 →](https://soniqo.audio/zh/guides/diarize)
 
 ```swift
 import SpeechVAD
@@ -272,7 +272,7 @@ let segments = diarizer.diarize(audio: samples, sampleRate: 16000)
 for s in segments { print("Speaker \(s.speakerId): \(s.startTime)s - \(s.endTime)s") }
 ```
 
-### 语音增强 — [完整指南 →](https://soniqo.audio/guides/denoise)
+### 语音增强 — [完整指南 →](https://soniqo.audio/zh/guides/denoise)
 
 ```swift
 import SpeechEnhancement
@@ -281,7 +281,7 @@ let denoiser = try await DeepFilterNet3Model.fromPretrained()
 let clean = try denoiser.enhance(audio: noisySamples, sampleRate: 48000)
 ```
 
-### 语音流水线（ASR → LLM → TTS） — [完整指南 →](https://soniqo.audio/api)
+### 语音流水线（ASR → LLM → TTS） — [完整指南 →](https://soniqo.audio/zh/api)
 
 ```swift
 import SpeechCore
@@ -311,7 +311,7 @@ audio-server --port 8080
 
 speech-swift 把每个模型拆成独立的 SPM target，因此使用者只为 import 的模块付费。共享基础设施在 `AudioCommon`（协议、音频 I/O、HuggingFace 下载器、`SentencePieceModel`）和 `MLXCommon`（权重加载、`QuantizedLinear` 辅助工具、`SDPA` 多头注意力辅助工具）。
 
-**[完整架构图（含后端、内存表、模块映射）→ soniqo.audio/architecture](https://soniqo.audio/architecture)** · **[API 参考 → soniqo.audio/api](https://soniqo.audio/api)** · **[基准测试 → soniqo.audio/benchmarks](https://soniqo.audio/benchmarks)**
+**[完整架构图（含后端、内存表、模块映射）→ soniqo.audio/architecture](https://soniqo.audio/zh/architecture)** · **[API 参考 → soniqo.audio/api](https://soniqo.audio/zh/api)** · **[基准测试 → soniqo.audio/benchmarks](https://soniqo.audio/zh/benchmarks)**
 
 本地文档（仓库内）：
 - **模型：** [Qwen3-ASR](docs/models/asr-model.md) · [Qwen3-TTS](docs/models/tts-model.md) · [CosyVoice](docs/models/cosyvoice-tts.md) · [Kokoro](docs/models/kokoro-tts.md) · [Parakeet TDT](docs/models/parakeet-asr.md) · [Parakeet Streaming](docs/models/parakeet-streaming-asr.md) · [Omnilingual ASR](docs/models/omnilingual-asr.md) · [PersonaPlex](docs/models/personaplex.md) · [FireRedVAD](docs/models/fireredvad.md)

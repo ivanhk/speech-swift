@@ -6,22 +6,22 @@ Apple Silicon के लिए AI स्पीच मॉडल, MLX Swift और
 
 Mac और iOS के लिए ऑन-डिवाइस स्पीच रिकग्निशन, सिंथेसिस और समझ। Apple Silicon पर पूरी तरह लोकली चलता है — कोई क्लाउड नहीं, कोई API key नहीं, कोई डेटा डिवाइस से बाहर नहीं जाता।
 
-**[📚 पूर्ण डॉक्यूमेंटेशन →](https://soniqo.audio)** · **[🤗 HuggingFace मॉडल](https://huggingface.co/aufklarer)** · **[📝 ब्लॉग](https://blog.ivan.digital)**
+**[📚 पूर्ण डॉक्यूमेंटेशन →](https://soniqo.audio/hi)** · **[🤗 HuggingFace मॉडल](https://huggingface.co/aufklarer)** · **[📝 ब्लॉग](https://blog.ivan.digital)**
 
-- **[Qwen3-ASR](https://soniqo.audio/guides/transcribe)** — स्पीच-टू-टेक्स्ट (ऑटोमैटिक स्पीच रिकग्निशन, 52 भाषाएँ, MLX + CoreML)
-- **[Parakeet TDT](https://soniqo.audio/guides/parakeet)** — CoreML के माध्यम से स्पीच-टू-टेक्स्ट (Neural Engine, NVIDIA FastConformer + TDT decoder, 25 भाषाएँ)
-- **[Omnilingual ASR](https://soniqo.audio/guides/omnilingual)** — स्पीच-टू-टेक्स्ट (Meta wav2vec2 + CTC, **1,672 भाषाएँ** 32 लिपियों में, CoreML 300M + MLX 300M/1B/3B/7B)
-- **[Streaming Dictation](https://soniqo.audio/guides/dictate)** — पार्शियल्स और एंड-ऑफ-अटरन्स डिटेक्शन के साथ रियल-टाइम डिक्टेशन (Parakeet-EOU-120M)
-- **[Qwen3-ForcedAligner](https://soniqo.audio/guides/align)** — शब्द-स्तरीय टाइमस्टैम्प अलाइनमेंट (ऑडियो + टेक्स्ट → टाइमस्टैम्प)
-- **[Qwen3-TTS](https://soniqo.audio/guides/speak)** — टेक्स्ट-टू-स्पीच (सर्वोच्च गुणवत्ता, स्ट्रीमिंग, कस्टम स्पीकर, 10 भाषाएँ)
-- **[CosyVoice TTS](https://soniqo.audio/guides/cosyvoice)** — वॉयस क्लोनिंग, मल्टी-स्पीकर डायलॉग, इमोशन टैग के साथ स्ट्रीमिंग TTS (9 भाषाएँ)
-- **[Kokoro TTS](https://soniqo.audio/guides/kokoro)** — ऑन-डिवाइस TTS (82M, CoreML/Neural Engine, 54 वॉयस, iOS-ready, 10 भाषाएँ)
-- **[Qwen3.5-Chat](https://soniqo.audio/guides/chat)** — ऑन-डिवाइस LLM चैट (0.8B, MLX INT4 + CoreML INT8, DeltaNet हाइब्रिड, स्ट्रीमिंग टोकन)
-- **[PersonaPlex](https://soniqo.audio/guides/respond)** — फुल-डुप्लेक्स स्पीच-टू-स्पीच (7B, ऑडियो इन → ऑडियो आउट, 18 वॉयस प्रीसेट)
-- **[DeepFilterNet3](https://soniqo.audio/guides/denoise)** — रियल-टाइम नॉइज़ सप्रेशन (2.1M params, 48 kHz)
-- **[VAD](https://soniqo.audio/guides/vad)** — वॉयस एक्टिविटी डिटेक्शन (Silero स्ट्रीमिंग, Pyannote ऑफ़लाइन, FireRedVAD 100+ भाषाएँ)
-- **[Speaker Diarization](https://soniqo.audio/guides/diarize)** — कौन कब बोला (Pyannote पाइपलाइन, Neural Engine पर एंड-टू-एंड Sortformer)
-- **[Speaker Embeddings](https://soniqo.audio/guides/embed-speaker)** — WeSpeaker ResNet34 (256-dim), CAM++ (192-dim)
+- **[Qwen3-ASR](https://soniqo.audio/hi/guides/transcribe)** — स्पीच-टू-टेक्स्ट (ऑटोमैटिक स्पीच रिकग्निशन, 52 भाषाएँ, MLX + CoreML)
+- **[Parakeet TDT](https://soniqo.audio/hi/guides/parakeet)** — CoreML के माध्यम से स्पीच-टू-टेक्स्ट (Neural Engine, NVIDIA FastConformer + TDT decoder, 25 भाषाएँ)
+- **[Omnilingual ASR](https://soniqo.audio/hi/guides/omnilingual)** — स्पीच-टू-टेक्स्ट (Meta wav2vec2 + CTC, **1,672 भाषाएँ** 32 लिपियों में, CoreML 300M + MLX 300M/1B/3B/7B)
+- **[Streaming Dictation](https://soniqo.audio/hi/guides/dictate)** — पार्शियल्स और एंड-ऑफ-अटरन्स डिटेक्शन के साथ रियल-टाइम डिक्टेशन (Parakeet-EOU-120M)
+- **[Qwen3-ForcedAligner](https://soniqo.audio/hi/guides/align)** — शब्द-स्तरीय टाइमस्टैम्प अलाइनमेंट (ऑडियो + टेक्स्ट → टाइमस्टैम्प)
+- **[Qwen3-TTS](https://soniqo.audio/hi/guides/speak)** — टेक्स्ट-टू-स्पीच (सर्वोच्च गुणवत्ता, स्ट्रीमिंग, कस्टम स्पीकर, 10 भाषाएँ)
+- **[CosyVoice TTS](https://soniqo.audio/hi/guides/cosyvoice)** — वॉयस क्लोनिंग, मल्टी-स्पीकर डायलॉग, इमोशन टैग के साथ स्ट्रीमिंग TTS (9 भाषाएँ)
+- **[Kokoro TTS](https://soniqo.audio/hi/guides/kokoro)** — ऑन-डिवाइस TTS (82M, CoreML/Neural Engine, 54 वॉयस, iOS-ready, 10 भाषाएँ)
+- **[Qwen3.5-Chat](https://soniqo.audio/hi/guides/chat)** — ऑन-डिवाइस LLM चैट (0.8B, MLX INT4 + CoreML INT8, DeltaNet हाइब्रिड, स्ट्रीमिंग टोकन)
+- **[PersonaPlex](https://soniqo.audio/hi/guides/respond)** — फुल-डुप्लेक्स स्पीच-टू-स्पीच (7B, ऑडियो इन → ऑडियो आउट, 18 वॉयस प्रीसेट)
+- **[DeepFilterNet3](https://soniqo.audio/hi/guides/denoise)** — रियल-टाइम नॉइज़ सप्रेशन (2.1M params, 48 kHz)
+- **[VAD](https://soniqo.audio/hi/guides/vad)** — वॉयस एक्टिविटी डिटेक्शन (Silero स्ट्रीमिंग, Pyannote ऑफ़लाइन, FireRedVAD 100+ भाषाएँ)
+- **[Speaker Diarization](https://soniqo.audio/hi/guides/diarize)** — कौन कब बोला (Pyannote पाइपलाइन, Neural Engine पर एंड-टू-एंड Sortformer)
+- **[Speaker Embeddings](https://soniqo.audio/hi/guides/embed-speaker)** — WeSpeaker ResNet34 (256-dim), CAM++ (192-dim)
 
 पेपर: [Qwen3-ASR](https://arxiv.org/abs/2601.21337) (Alibaba) · [Qwen3-TTS](https://arxiv.org/abs/2601.15621) (Alibaba) · [Omnilingual ASR](https://arxiv.org/abs/2511.09690) (Meta) · [Parakeet TDT](https://arxiv.org/abs/2304.06795) (NVIDIA) · [CosyVoice 3](https://arxiv.org/abs/2505.17589) (Alibaba) · [Kokoro](https://arxiv.org/abs/2301.01695) (StyleTTS 2) · [PersonaPlex](https://arxiv.org/abs/2602.06053) (NVIDIA) · [Mimi](https://arxiv.org/abs/2410.00037) (Kyutai) · [Sortformer](https://arxiv.org/abs/2409.06656) (NVIDIA)
 
@@ -94,25 +94,25 @@ struct DictateView: View {
 
 ## मॉडल
 
-नीचे संक्षिप्त दृश्य। **[पूर्ण मॉडल कैटलॉग (आकार, क्वांटिज़ेशन, डाउनलोड URL, मेमोरी टेबल्स) → soniqo.audio/architecture](https://soniqo.audio/architecture)**.
+नीचे संक्षिप्त दृश्य। **[पूर्ण मॉडल कैटलॉग (आकार, क्वांटिज़ेशन, डाउनलोड URL, मेमोरी टेबल्स) → soniqo.audio/architecture](https://soniqo.audio/hi/architecture)**.
 
 | मॉडल | कार्य | बैकएंड | आकार | भाषाएँ |
 |------|------|--------|------|--------|
-| [Qwen3-ASR](https://soniqo.audio/guides/transcribe) | स्पीच → टेक्स्ट | MLX, CoreML (हाइब्रिड) | 0.6B, 1.7B | 52 |
-| [Parakeet TDT](https://soniqo.audio/guides/parakeet) | स्पीच → टेक्स्ट | CoreML (ANE) | 0.6B | 25 यूरोपीय |
-| [Parakeet EOU](https://soniqo.audio/guides/dictate) | स्पीच → टेक्स्ट (स्ट्रीमिंग) | CoreML (ANE) | 120M | 25 यूरोपीय |
-| [Omnilingual ASR](https://soniqo.audio/guides/omnilingual) | स्पीच → टेक्स्ट | CoreML (ANE), MLX | 300M / 1B / 3B / 7B | **[1,672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
-| [Qwen3-ForcedAligner](https://soniqo.audio/guides/align) | ऑडियो + टेक्स्ट → टाइमस्टैम्प | MLX, CoreML | 0.6B | बहुभाषी |
-| [Qwen3-TTS](https://soniqo.audio/guides/speak) | टेक्स्ट → स्पीच | MLX, CoreML | 0.6B, 1.7B | 10 |
-| [CosyVoice3](https://soniqo.audio/guides/cosyvoice) | टेक्स्ट → स्पीच | MLX | 0.5B | 9 |
-| [Kokoro-82M](https://soniqo.audio/guides/kokoro) | टेक्स्ट → स्पीच | CoreML (ANE) | 82M | 10 |
-| [Qwen3.5-Chat](https://soniqo.audio/guides/chat) | टेक्स्ट → टेक्स्ट (LLM) | MLX, CoreML | 0.8B | बहुभाषी |
-| [PersonaPlex](https://soniqo.audio/guides/respond) | स्पीच → स्पीच | MLX | 7B | EN |
-| [Silero VAD](https://soniqo.audio/guides/vad) | वॉयस एक्टिविटी डिटेक्शन | MLX, CoreML | 309K | भाषा-तटस्थ |
-| [Pyannote](https://soniqo.audio/guides/diarize) | VAD + Diarization | MLX | 1.5M | भाषा-तटस्थ |
-| [Sortformer](https://soniqo.audio/guides/diarize) | Diarization (E2E) | CoreML (ANE) | — | भाषा-तटस्थ |
-| [DeepFilterNet3](https://soniqo.audio/guides/denoise) | स्पीच एन्हांसमेंट | CoreML | 2.1M | भाषा-तटस्थ |
-| [WeSpeaker](https://soniqo.audio/guides/embed-speaker) | स्पीकर एम्बेडिंग | MLX, CoreML | 6.6M | भाषा-तटस्थ |
+| [Qwen3-ASR](https://soniqo.audio/hi/guides/transcribe) | स्पीच → टेक्स्ट | MLX, CoreML (हाइब्रिड) | 0.6B, 1.7B | 52 |
+| [Parakeet TDT](https://soniqo.audio/hi/guides/parakeet) | स्पीच → टेक्स्ट | CoreML (ANE) | 0.6B | 25 यूरोपीय |
+| [Parakeet EOU](https://soniqo.audio/hi/guides/dictate) | स्पीच → टेक्स्ट (स्ट्रीमिंग) | CoreML (ANE) | 120M | 25 यूरोपीय |
+| [Omnilingual ASR](https://soniqo.audio/hi/guides/omnilingual) | स्पीच → टेक्स्ट | CoreML (ANE), MLX | 300M / 1B / 3B / 7B | **[1,672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
+| [Qwen3-ForcedAligner](https://soniqo.audio/hi/guides/align) | ऑडियो + टेक्स्ट → टाइमस्टैम्प | MLX, CoreML | 0.6B | बहुभाषी |
+| [Qwen3-TTS](https://soniqo.audio/hi/guides/speak) | टेक्स्ट → स्पीच | MLX, CoreML | 0.6B, 1.7B | 10 |
+| [CosyVoice3](https://soniqo.audio/hi/guides/cosyvoice) | टेक्स्ट → स्पीच | MLX | 0.5B | 9 |
+| [Kokoro-82M](https://soniqo.audio/hi/guides/kokoro) | टेक्स्ट → स्पीच | CoreML (ANE) | 82M | 10 |
+| [Qwen3.5-Chat](https://soniqo.audio/hi/guides/chat) | टेक्स्ट → टेक्स्ट (LLM) | MLX, CoreML | 0.8B | बहुभाषी |
+| [PersonaPlex](https://soniqo.audio/hi/guides/respond) | स्पीच → स्पीच | MLX | 7B | EN |
+| [Silero VAD](https://soniqo.audio/hi/guides/vad) | वॉयस एक्टिविटी डिटेक्शन | MLX, CoreML | 309K | भाषा-तटस्थ |
+| [Pyannote](https://soniqo.audio/hi/guides/diarize) | VAD + Diarization | MLX | 1.5M | भाषा-तटस्थ |
+| [Sortformer](https://soniqo.audio/hi/guides/diarize) | Diarization (E2E) | CoreML (ANE) | — | भाषा-तटस्थ |
+| [DeepFilterNet3](https://soniqo.audio/hi/guides/denoise) | स्पीच एन्हांसमेंट | CoreML | 2.1M | भाषा-तटस्थ |
+| [WeSpeaker](https://soniqo.audio/hi/guides/embed-speaker) | स्पीकर एम्बेडिंग | MLX, CoreML | 6.6M | भाषा-तटस्थ |
 
 ## इंस्टॉलेशन
 
@@ -133,7 +133,7 @@ audio speak "Hello world"
 audio respond --input question.wav --transcript
 ```
 
-**[पूर्ण CLI संदर्भ →](https://soniqo.audio/cli)**
+**[पूर्ण CLI संदर्भ →](https://soniqo.audio/hi/cli)**
 
 ### Swift Package Manager
 
@@ -176,11 +176,11 @@ make build
 
 `make build` Swift पैकेज **और** MLX Metal shader library दोनों को कंपाइल करता है। GPU इन्फ़रेंस के लिए Metal library आवश्यक है — इसके बिना आपको रनटाइम पर `Failed to load the default metallib` दिखेगा। `make debug` डीबग बिल्ड के लिए, `make test` टेस्ट सूट के लिए।
 
-**[पूर्ण बिल्ड और इंस्टॉल गाइड →](https://soniqo.audio/getting-started)**
+**[पूर्ण बिल्ड और इंस्टॉल गाइड →](https://soniqo.audio/hi/getting-started)**
 
 ## डेमो ऐप्स
 
-- **[DictateDemo](Examples/DictateDemo/)** ([डॉक्स](https://soniqo.audio/guides/dictate)) — macOS मेनू-बार स्ट्रीमिंग डिक्टेशन, लाइव पार्शियल्स, VAD-संचालित एंड-ऑफ-अटरन्स डिटेक्शन, और वन-क्लिक कॉपी। बैकग्राउंड एजेंट के रूप में चलता है (Parakeet-EOU-120M + Silero VAD)।
+- **[DictateDemo](Examples/DictateDemo/)** ([डॉक्स](https://soniqo.audio/hi/guides/dictate)) — macOS मेनू-बार स्ट्रीमिंग डिक्टेशन, लाइव पार्शियल्स, VAD-संचालित एंड-ऑफ-अटरन्स डिटेक्शन, और वन-क्लिक कॉपी। बैकग्राउंड एजेंट के रूप में चलता है (Parakeet-EOU-120M + Silero VAD)।
 - **[iOSEchoDemo](Examples/iOSEchoDemo/)** — iOS इको डेमो (Parakeet ASR + Kokoro TTS)। डिवाइस और सिम्युलेटर।
 - **[PersonaPlexDemo](Examples/PersonaPlexDemo/)** — माइक इनपुट, VAD, और मल्टी-टर्न संदर्भ के साथ संवादात्मक वॉयस असिस्टेंट। macOS। M2 Max पर RTF ~0.94 (रियल-टाइम से तेज़)।
 - **[SpeechDemo](Examples/SpeechDemo/)** — टैब्ड इंटरफ़ेस में डिक्टेशन और TTS सिंथेसिस। macOS।
@@ -189,9 +189,9 @@ make build
 
 ## कोड उदाहरण
 
-नीचे दिए गए स्निपेट्स प्रत्येक डोमेन के लिए न्यूनतम पथ दिखाते हैं। प्रत्येक अनुभाग [soniqo.audio](https://soniqo.audio) पर पूर्ण गाइड से लिंक होता है जिसमें कॉन्फ़िगरेशन विकल्प, कई बैकएंड, स्ट्रीमिंग पैटर्न, और CLI रेसिपी शामिल हैं।
+नीचे दिए गए स्निपेट्स प्रत्येक डोमेन के लिए न्यूनतम पथ दिखाते हैं। प्रत्येक अनुभाग [soniqo.audio](https://soniqo.audio/hi) पर पूर्ण गाइड से लिंक होता है जिसमें कॉन्फ़िगरेशन विकल्प, कई बैकएंड, स्ट्रीमिंग पैटर्न, और CLI रेसिपी शामिल हैं।
 
-### स्पीच-टू-टेक्स्ट — [पूर्ण गाइड →](https://soniqo.audio/guides/transcribe)
+### स्पीच-टू-टेक्स्ट — [पूर्ण गाइड →](https://soniqo.audio/hi/guides/transcribe)
 
 ```swift
 import Qwen3ASR
@@ -200,9 +200,9 @@ let model = try await Qwen3ASRModel.fromPretrained()
 let text = model.transcribe(audio: audioSamples, sampleRate: 16000)
 ```
 
-वैकल्पिक बैकएंड: [Parakeet TDT](https://soniqo.audio/guides/parakeet) (CoreML, 32× रियल-टाइम), [Omnilingual ASR](https://soniqo.audio/guides/omnilingual) (1,672 भाषाएँ, CoreML या MLX), [स्ट्रीमिंग डिक्टेशन](https://soniqo.audio/guides/dictate) (लाइव पार्शियल्स)।
+वैकल्पिक बैकएंड: [Parakeet TDT](https://soniqo.audio/hi/guides/parakeet) (CoreML, 32× रियल-टाइम), [Omnilingual ASR](https://soniqo.audio/hi/guides/omnilingual) (1,672 भाषाएँ, CoreML या MLX), [स्ट्रीमिंग डिक्टेशन](https://soniqo.audio/hi/guides/dictate) (लाइव पार्शियल्स)।
 
-### फ़ोर्स्ड अलाइनमेंट — [पूर्ण गाइड →](https://soniqo.audio/guides/align)
+### फ़ोर्स्ड अलाइनमेंट — [पूर्ण गाइड →](https://soniqo.audio/hi/guides/align)
 
 ```swift
 import Qwen3ASR
@@ -218,7 +218,7 @@ for word in aligned {
 }
 ```
 
-### टेक्स्ट-टू-स्पीच — [पूर्ण गाइड →](https://soniqo.audio/guides/speak)
+### टेक्स्ट-टू-स्पीच — [पूर्ण गाइड →](https://soniqo.audio/hi/guides/speak)
 
 ```swift
 import Qwen3TTS
@@ -229,9 +229,9 @@ let audio = model.synthesize(text: "Hello world", language: "english")
 try WAVWriter.write(samples: audio, sampleRate: 24000, to: outputURL)
 ```
 
-वैकल्पिक TTS इंजन: [CosyVoice3](https://soniqo.audio/guides/cosyvoice) (स्ट्रीमिंग + वॉयस क्लोनिंग + इमोशन टैग), [Kokoro-82M](https://soniqo.audio/guides/kokoro) (iOS-ready, 54 वॉयस), [वॉयस क्लोनिंग](https://soniqo.audio/guides/voice-cloning)।
+वैकल्पिक TTS इंजन: [CosyVoice3](https://soniqo.audio/hi/guides/cosyvoice) (स्ट्रीमिंग + वॉयस क्लोनिंग + इमोशन टैग), [Kokoro-82M](https://soniqo.audio/hi/guides/kokoro) (iOS-ready, 54 वॉयस), [वॉयस क्लोनिंग](https://soniqo.audio/hi/guides/voice-cloning)।
 
-### स्पीच-टू-स्पीच — [पूर्ण गाइड →](https://soniqo.audio/guides/respond)
+### स्पीच-टू-स्पीच — [पूर्ण गाइड →](https://soniqo.audio/hi/guides/respond)
 
 ```swift
 import PersonaPlex
@@ -241,7 +241,7 @@ let responseAudio = model.respond(userAudio: userSamples)
 // 24 kHz मोनो Float32 आउटपुट — प्लेबैक के लिए तैयार
 ```
 
-### LLM चैट — [पूर्ण गाइड →](https://soniqo.audio/guides/chat)
+### LLM चैट — [पूर्ण गाइड →](https://soniqo.audio/hi/guides/chat)
 
 ```swift
 import Qwen3Chat
@@ -252,7 +252,7 @@ chat.chat(messages: [(.user, "Explain MLX in one sentence")]) { token, isFinal i
 }
 ```
 
-### वॉयस एक्टिविटी डिटेक्शन — [पूर्ण गाइड →](https://soniqo.audio/guides/vad)
+### वॉयस एक्टिविटी डिटेक्शन — [पूर्ण गाइड →](https://soniqo.audio/hi/guides/vad)
 
 ```swift
 import SpeechVAD
@@ -262,7 +262,7 @@ let segments = vad.detectSpeech(audio: samples, sampleRate: 16000)
 for s in segments { print("\(s.startTime)s → \(s.endTime)s") }
 ```
 
-### स्पीकर डायराइज़ेशन — [पूर्ण गाइड →](https://soniqo.audio/guides/diarize)
+### स्पीकर डायराइज़ेशन — [पूर्ण गाइड →](https://soniqo.audio/hi/guides/diarize)
 
 ```swift
 import SpeechVAD
@@ -272,7 +272,7 @@ let segments = diarizer.diarize(audio: samples, sampleRate: 16000)
 for s in segments { print("Speaker \(s.speakerId): \(s.startTime)s - \(s.endTime)s") }
 ```
 
-### स्पीच एन्हांसमेंट — [पूर्ण गाइड →](https://soniqo.audio/guides/denoise)
+### स्पीच एन्हांसमेंट — [पूर्ण गाइड →](https://soniqo.audio/hi/guides/denoise)
 
 ```swift
 import SpeechEnhancement
@@ -281,7 +281,7 @@ let denoiser = try await DeepFilterNet3Model.fromPretrained()
 let clean = try denoiser.enhance(audio: noisySamples, sampleRate: 48000)
 ```
 
-### वॉयस पाइपलाइन (ASR → LLM → TTS) — [पूर्ण गाइड →](https://soniqo.audio/api)
+### वॉयस पाइपलाइन (ASR → LLM → TTS) — [पूर्ण गाइड →](https://soniqo.audio/hi/api)
 
 ```swift
 import SpeechCore
@@ -311,7 +311,7 @@ audio-server --port 8080
 
 speech-swift प्रति मॉडल एक SPM टारगेट में विभाजित है ताकि उपभोक्ता केवल उसी के लिए भुगतान करें जो वे इम्पोर्ट करते हैं। साझा इन्फ़्रास्ट्रक्चर `AudioCommon` (प्रोटोकॉल, ऑडियो I/O, HuggingFace डाउनलोडर, `SentencePieceModel`) और `MLXCommon` (वेट लोडिंग, `QuantizedLinear` हेल्पर्स, multi-head attention के लिए `SDPA` हेल्पर) में रहता है।
 
-**[बैकएंड, मेमोरी टेबल्स, और मॉड्यूल मैप के साथ पूर्ण आर्किटेक्चर डायग्राम → soniqo.audio/architecture](https://soniqo.audio/architecture)** · **[API संदर्भ → soniqo.audio/api](https://soniqo.audio/api)** · **[बेंचमार्क → soniqo.audio/benchmarks](https://soniqo.audio/benchmarks)**
+**[बैकएंड, मेमोरी टेबल्स, और मॉड्यूल मैप के साथ पूर्ण आर्किटेक्चर डायग्राम → soniqo.audio/architecture](https://soniqo.audio/hi/architecture)** · **[API संदर्भ → soniqo.audio/api](https://soniqo.audio/hi/api)** · **[बेंचमार्क → soniqo.audio/benchmarks](https://soniqo.audio/hi/benchmarks)**
 
 स्थानीय डॉक्स (रिपॉज़िटरी):
 - **मॉडल:** [Qwen3-ASR](docs/models/asr-model.md) · [Qwen3-TTS](docs/models/tts-model.md) · [CosyVoice](docs/models/cosyvoice-tts.md) · [Kokoro](docs/models/kokoro-tts.md) · [Parakeet TDT](docs/models/parakeet-asr.md) · [Parakeet Streaming](docs/models/parakeet-streaming-asr.md) · [Omnilingual ASR](docs/models/omnilingual-asr.md) · [PersonaPlex](docs/models/personaplex.md) · [FireRedVAD](docs/models/fireredvad.md)

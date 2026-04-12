@@ -6,22 +6,22 @@ MLX Swift와 CoreML 기반의 Apple Silicon용 AI 음성 모델.
 
 Mac과 iOS를 위한 온디바이스 음성 인식, 합성 및 이해. Apple Silicon에서 완전히 로컬로 실행됩니다 — 클라우드 없이, API 키 없이, 데이터가 기기 밖으로 나가지 않습니다.
 
-**[📚 전체 문서 →](https://soniqo.audio)** · **[🤗 HuggingFace 모델](https://huggingface.co/aufklarer)** · **[📝 블로그](https://blog.ivan.digital)**
+**[📚 전체 문서 →](https://soniqo.audio/ko)** · **[🤗 HuggingFace 모델](https://huggingface.co/aufklarer)** · **[📝 블로그](https://blog.ivan.digital)**
 
-- **[Qwen3-ASR](https://soniqo.audio/guides/transcribe)** — 음성-텍스트 변환 (자동 음성 인식, 52개 언어, MLX + CoreML)
-- **[Parakeet TDT](https://soniqo.audio/guides/parakeet)** — CoreML을 통한 음성-텍스트 변환 (Neural Engine, NVIDIA FastConformer + TDT 디코더, 25개 언어)
-- **[Omnilingual ASR](https://soniqo.audio/guides/omnilingual)** — 음성-텍스트 변환 (Meta wav2vec2 + CTC, **1,672개 언어**, 32개 문자 체계, CoreML 300M + MLX 300M/1B/3B/7B)
-- **[스트리밍 받아쓰기](https://soniqo.audio/guides/dictate)** — 부분 결과와 발화 종료 감지를 갖춘 실시간 받아쓰기 (Parakeet-EOU-120M)
-- **[Qwen3-ForcedAligner](https://soniqo.audio/guides/align)** — 단어 수준 타임스탬프 정렬 (오디오 + 텍스트 → 타임스탬프)
-- **[Qwen3-TTS](https://soniqo.audio/guides/speak)** — 텍스트-음성 변환 (최고 품질, 스트리밍, 커스텀 화자, 10개 언어)
-- **[CosyVoice TTS](https://soniqo.audio/guides/cosyvoice)** — 음성 복제, 다화자 대화, 감정 태그를 지원하는 스트리밍 TTS (9개 언어)
-- **[Kokoro TTS](https://soniqo.audio/guides/kokoro)** — 온디바이스 TTS (82M, CoreML/Neural Engine, 54개 음색, iOS 지원, 10개 언어)
-- **[Qwen3.5-Chat](https://soniqo.audio/guides/chat)** — 온디바이스 LLM 채팅 (0.8B, MLX INT4 + CoreML INT8, DeltaNet 하이브리드, 스트리밍 토큰)
-- **[PersonaPlex](https://soniqo.audio/guides/respond)** — 전이중 음성-음성 대화 (7B, 오디오 입력 → 오디오 출력, 18개 음색 프리셋)
-- **[DeepFilterNet3](https://soniqo.audio/guides/denoise)** — 실시간 노이즈 억제 (2.1M 파라미터, 48 kHz)
-- **[VAD](https://soniqo.audio/guides/vad)** — 음성 활동 감지 (Silero 스트리밍, Pyannote 오프라인, FireRedVAD 100+ 개 언어)
-- **[화자 분리](https://soniqo.audio/guides/diarize)** — 누가 언제 말했는지 (Pyannote 파이프라인, Neural Engine 상의 엔드투엔드 Sortformer)
-- **[화자 임베딩](https://soniqo.audio/guides/embed-speaker)** — WeSpeaker ResNet34 (256차원), CAM++ (192차원)
+- **[Qwen3-ASR](https://soniqo.audio/ko/guides/transcribe)** — 음성-텍스트 변환 (자동 음성 인식, 52개 언어, MLX + CoreML)
+- **[Parakeet TDT](https://soniqo.audio/ko/guides/parakeet)** — CoreML을 통한 음성-텍스트 변환 (Neural Engine, NVIDIA FastConformer + TDT 디코더, 25개 언어)
+- **[Omnilingual ASR](https://soniqo.audio/ko/guides/omnilingual)** — 음성-텍스트 변환 (Meta wav2vec2 + CTC, **1,672개 언어**, 32개 문자 체계, CoreML 300M + MLX 300M/1B/3B/7B)
+- **[스트리밍 받아쓰기](https://soniqo.audio/ko/guides/dictate)** — 부분 결과와 발화 종료 감지를 갖춘 실시간 받아쓰기 (Parakeet-EOU-120M)
+- **[Qwen3-ForcedAligner](https://soniqo.audio/ko/guides/align)** — 단어 수준 타임스탬프 정렬 (오디오 + 텍스트 → 타임스탬프)
+- **[Qwen3-TTS](https://soniqo.audio/ko/guides/speak)** — 텍스트-음성 변환 (최고 품질, 스트리밍, 커스텀 화자, 10개 언어)
+- **[CosyVoice TTS](https://soniqo.audio/ko/guides/cosyvoice)** — 음성 복제, 다화자 대화, 감정 태그를 지원하는 스트리밍 TTS (9개 언어)
+- **[Kokoro TTS](https://soniqo.audio/ko/guides/kokoro)** — 온디바이스 TTS (82M, CoreML/Neural Engine, 54개 음색, iOS 지원, 10개 언어)
+- **[Qwen3.5-Chat](https://soniqo.audio/ko/guides/chat)** — 온디바이스 LLM 채팅 (0.8B, MLX INT4 + CoreML INT8, DeltaNet 하이브리드, 스트리밍 토큰)
+- **[PersonaPlex](https://soniqo.audio/ko/guides/respond)** — 전이중 음성-음성 대화 (7B, 오디오 입력 → 오디오 출력, 18개 음색 프리셋)
+- **[DeepFilterNet3](https://soniqo.audio/ko/guides/denoise)** — 실시간 노이즈 억제 (2.1M 파라미터, 48 kHz)
+- **[VAD](https://soniqo.audio/ko/guides/vad)** — 음성 활동 감지 (Silero 스트리밍, Pyannote 오프라인, FireRedVAD 100+ 개 언어)
+- **[화자 분리](https://soniqo.audio/ko/guides/diarize)** — 누가 언제 말했는지 (Pyannote 파이프라인, Neural Engine 상의 엔드투엔드 Sortformer)
+- **[화자 임베딩](https://soniqo.audio/ko/guides/embed-speaker)** — WeSpeaker ResNet34 (256차원), CAM++ (192차원)
 
 논문: [Qwen3-ASR](https://arxiv.org/abs/2601.21337) (Alibaba) · [Qwen3-TTS](https://arxiv.org/abs/2601.15621) (Alibaba) · [Omnilingual ASR](https://arxiv.org/abs/2511.09690) (Meta) · [Parakeet TDT](https://arxiv.org/abs/2304.06795) (NVIDIA) · [CosyVoice 3](https://arxiv.org/abs/2505.17589) (Alibaba) · [Kokoro](https://arxiv.org/abs/2301.01695) (StyleTTS 2) · [PersonaPlex](https://arxiv.org/abs/2602.06053) (NVIDIA) · [Mimi](https://arxiv.org/abs/2410.00037) (Kyutai) · [Sortformer](https://arxiv.org/abs/2409.06656) (NVIDIA)
 
@@ -94,25 +94,25 @@ struct DictateView: View {
 
 ## 모델
 
-아래는 컴팩트 뷰입니다. **[크기, 양자화, 다운로드 URL, 메모리 테이블을 포함한 전체 모델 카탈로그 → soniqo.audio/architecture](https://soniqo.audio/architecture)**.
+아래는 컴팩트 뷰입니다. **[크기, 양자화, 다운로드 URL, 메모리 테이블을 포함한 전체 모델 카탈로그 → soniqo.audio/architecture](https://soniqo.audio/ko/architecture)**.
 
 | 모델 | 작업 | 백엔드 | 크기 | 언어 |
 |-------|------|----------|-------|-----------|
-| [Qwen3-ASR](https://soniqo.audio/guides/transcribe) | 음성 → 텍스트 | MLX, CoreML (하이브리드) | 0.6B, 1.7B | 52 |
-| [Parakeet TDT](https://soniqo.audio/guides/parakeet) | 음성 → 텍스트 | CoreML (ANE) | 0.6B | 25개 유럽어 |
-| [Parakeet EOU](https://soniqo.audio/guides/dictate) | 음성 → 텍스트 (스트리밍) | CoreML (ANE) | 120M | 25개 유럽어 |
-| [Omnilingual ASR](https://soniqo.audio/guides/omnilingual) | 음성 → 텍스트 | CoreML (ANE), MLX | 300M / 1B / 3B / 7B | **[1,672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
-| [Qwen3-ForcedAligner](https://soniqo.audio/guides/align) | 오디오 + 텍스트 → 타임스탬프 | MLX, CoreML | 0.6B | 다언어 |
-| [Qwen3-TTS](https://soniqo.audio/guides/speak) | 텍스트 → 음성 | MLX, CoreML | 0.6B, 1.7B | 10 |
-| [CosyVoice3](https://soniqo.audio/guides/cosyvoice) | 텍스트 → 음성 | MLX | 0.5B | 9 |
-| [Kokoro-82M](https://soniqo.audio/guides/kokoro) | 텍스트 → 음성 | CoreML (ANE) | 82M | 10 |
-| [Qwen3.5-Chat](https://soniqo.audio/guides/chat) | 텍스트 → 텍스트 (LLM) | MLX, CoreML | 0.8B | 다언어 |
-| [PersonaPlex](https://soniqo.audio/guides/respond) | 음성 → 음성 | MLX | 7B | EN |
-| [Silero VAD](https://soniqo.audio/guides/vad) | 음성 활동 감지 | MLX, CoreML | 309K | 언어 무관 |
-| [Pyannote](https://soniqo.audio/guides/diarize) | VAD + 화자 분리 | MLX | 1.5M | 언어 무관 |
-| [Sortformer](https://soniqo.audio/guides/diarize) | 화자 분리 (E2E) | CoreML (ANE) | — | 언어 무관 |
-| [DeepFilterNet3](https://soniqo.audio/guides/denoise) | 음성 향상 | CoreML | 2.1M | 언어 무관 |
-| [WeSpeaker](https://soniqo.audio/guides/embed-speaker) | 화자 임베딩 | MLX, CoreML | 6.6M | 언어 무관 |
+| [Qwen3-ASR](https://soniqo.audio/ko/guides/transcribe) | 음성 → 텍스트 | MLX, CoreML (하이브리드) | 0.6B, 1.7B | 52 |
+| [Parakeet TDT](https://soniqo.audio/ko/guides/parakeet) | 음성 → 텍스트 | CoreML (ANE) | 0.6B | 25개 유럽어 |
+| [Parakeet EOU](https://soniqo.audio/ko/guides/dictate) | 음성 → 텍스트 (스트리밍) | CoreML (ANE) | 120M | 25개 유럽어 |
+| [Omnilingual ASR](https://soniqo.audio/ko/guides/omnilingual) | 음성 → 텍스트 | CoreML (ANE), MLX | 300M / 1B / 3B / 7B | **[1,672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
+| [Qwen3-ForcedAligner](https://soniqo.audio/ko/guides/align) | 오디오 + 텍스트 → 타임스탬프 | MLX, CoreML | 0.6B | 다언어 |
+| [Qwen3-TTS](https://soniqo.audio/ko/guides/speak) | 텍스트 → 음성 | MLX, CoreML | 0.6B, 1.7B | 10 |
+| [CosyVoice3](https://soniqo.audio/ko/guides/cosyvoice) | 텍스트 → 음성 | MLX | 0.5B | 9 |
+| [Kokoro-82M](https://soniqo.audio/ko/guides/kokoro) | 텍스트 → 음성 | CoreML (ANE) | 82M | 10 |
+| [Qwen3.5-Chat](https://soniqo.audio/ko/guides/chat) | 텍스트 → 텍스트 (LLM) | MLX, CoreML | 0.8B | 다언어 |
+| [PersonaPlex](https://soniqo.audio/ko/guides/respond) | 음성 → 음성 | MLX | 7B | EN |
+| [Silero VAD](https://soniqo.audio/ko/guides/vad) | 음성 활동 감지 | MLX, CoreML | 309K | 언어 무관 |
+| [Pyannote](https://soniqo.audio/ko/guides/diarize) | VAD + 화자 분리 | MLX | 1.5M | 언어 무관 |
+| [Sortformer](https://soniqo.audio/ko/guides/diarize) | 화자 분리 (E2E) | CoreML (ANE) | — | 언어 무관 |
+| [DeepFilterNet3](https://soniqo.audio/ko/guides/denoise) | 음성 향상 | CoreML | 2.1M | 언어 무관 |
+| [WeSpeaker](https://soniqo.audio/ko/guides/embed-speaker) | 화자 임베딩 | MLX, CoreML | 6.6M | 언어 무관 |
 
 ## 설치
 
@@ -133,7 +133,7 @@ audio speak "Hello world"
 audio respond --input question.wav --transcript
 ```
 
-**[전체 CLI 레퍼런스 →](https://soniqo.audio/cli)**
+**[전체 CLI 레퍼런스 →](https://soniqo.audio/ko/cli)**
 
 ### Swift Package Manager
 
@@ -176,11 +176,11 @@ make build
 
 `make build`는 Swift 패키지**와** MLX Metal 셰이더 라이브러리를 함께 컴파일합니다. Metal 라이브러리는 GPU 추론에 필요합니다 — 없으면 런타임에 `Failed to load the default metallib`이 발생합니다. 디버그 빌드는 `make debug`, 테스트 스위트는 `make test`로 실행합니다.
 
-**[전체 빌드 및 설치 가이드 →](https://soniqo.audio/getting-started)**
+**[전체 빌드 및 설치 가이드 →](https://soniqo.audio/ko/getting-started)**
 
 ## 데모 앱
 
-- **[DictateDemo](Examples/DictateDemo/)** ([문서](https://soniqo.audio/guides/dictate)) — macOS 메뉴 바 스트리밍 받아쓰기. 라이브 파셜, VAD 기반 발화 종료 감지, 원클릭 복사. 백그라운드 agent로 실행됩니다 (Parakeet-EOU-120M + Silero VAD).
+- **[DictateDemo](Examples/DictateDemo/)** ([문서](https://soniqo.audio/ko/guides/dictate)) — macOS 메뉴 바 스트리밍 받아쓰기. 라이브 파셜, VAD 기반 발화 종료 감지, 원클릭 복사. 백그라운드 agent로 실행됩니다 (Parakeet-EOU-120M + Silero VAD).
 - **[iOSEchoDemo](Examples/iOSEchoDemo/)** — iOS 에코 데모 (Parakeet ASR + Kokoro TTS). 기기 및 시뮬레이터 지원.
 - **[PersonaPlexDemo](Examples/PersonaPlexDemo/)** — 마이크 입력, VAD, 멀티턴 컨텍스트를 지원하는 대화형 음성 어시스턴트. macOS. M2 Max에서 RTF 약 0.94 (실시간보다 빠름).
 - **[SpeechDemo](Examples/SpeechDemo/)** — 탭형 인터페이스에서 받아쓰기와 TTS 합성. macOS.
@@ -189,9 +189,9 @@ make build
 
 ## 코드 예제
 
-아래 스니펫은 각 도메인의 최소 사용 경로를 보여줍니다. 각 섹션은 [soniqo.audio](https://soniqo.audio)의 전체 가이드로 링크되어 있으며, 설정 옵션, 다양한 백엔드, 스트리밍 패턴 및 CLI 레시피를 다룹니다.
+아래 스니펫은 각 도메인의 최소 사용 경로를 보여줍니다. 각 섹션은 [soniqo.audio](https://soniqo.audio/ko)의 전체 가이드로 링크되어 있으며, 설정 옵션, 다양한 백엔드, 스트리밍 패턴 및 CLI 레시피를 다룹니다.
 
-### 음성-텍스트 변환 — [전체 가이드 →](https://soniqo.audio/guides/transcribe)
+### 음성-텍스트 변환 — [전체 가이드 →](https://soniqo.audio/ko/guides/transcribe)
 
 ```swift
 import Qwen3ASR
@@ -200,9 +200,9 @@ let model = try await Qwen3ASRModel.fromPretrained()
 let text = model.transcribe(audio: audioSamples, sampleRate: 16000)
 ```
 
-대체 백엔드: [Parakeet TDT](https://soniqo.audio/guides/parakeet) (CoreML, 32× 실시간), [Omnilingual ASR](https://soniqo.audio/guides/omnilingual) (1,672개 언어, CoreML 또는 MLX), [스트리밍 받아쓰기](https://soniqo.audio/guides/dictate) (라이브 파셜).
+대체 백엔드: [Parakeet TDT](https://soniqo.audio/ko/guides/parakeet) (CoreML, 32× 실시간), [Omnilingual ASR](https://soniqo.audio/ko/guides/omnilingual) (1,672개 언어, CoreML 또는 MLX), [스트리밍 받아쓰기](https://soniqo.audio/ko/guides/dictate) (라이브 파셜).
 
-### 강제 정렬 — [전체 가이드 →](https://soniqo.audio/guides/align)
+### 강제 정렬 — [전체 가이드 →](https://soniqo.audio/ko/guides/align)
 
 ```swift
 import Qwen3ASR
@@ -218,7 +218,7 @@ for word in aligned {
 }
 ```
 
-### 텍스트-음성 변환 — [전체 가이드 →](https://soniqo.audio/guides/speak)
+### 텍스트-음성 변환 — [전체 가이드 →](https://soniqo.audio/ko/guides/speak)
 
 ```swift
 import Qwen3TTS
@@ -229,9 +229,9 @@ let audio = model.synthesize(text: "Hello world", language: "english")
 try WAVWriter.write(samples: audio, sampleRate: 24000, to: outputURL)
 ```
 
-대체 TTS 엔진: [CosyVoice3](https://soniqo.audio/guides/cosyvoice) (스트리밍 + 음성 복제 + 감정 태그), [Kokoro-82M](https://soniqo.audio/guides/kokoro) (iOS 지원, 54개 음색), [음성 복제](https://soniqo.audio/guides/voice-cloning).
+대체 TTS 엔진: [CosyVoice3](https://soniqo.audio/ko/guides/cosyvoice) (스트리밍 + 음성 복제 + 감정 태그), [Kokoro-82M](https://soniqo.audio/ko/guides/kokoro) (iOS 지원, 54개 음색), [음성 복제](https://soniqo.audio/ko/guides/voice-cloning).
 
-### 음성-음성 변환 — [전체 가이드 →](https://soniqo.audio/guides/respond)
+### 음성-음성 변환 — [전체 가이드 →](https://soniqo.audio/ko/guides/respond)
 
 ```swift
 import PersonaPlex
@@ -241,7 +241,7 @@ let responseAudio = model.respond(userAudio: userSamples)
 // 24 kHz 모노 Float32 출력, 재생 준비 완료
 ```
 
-### LLM 채팅 — [전체 가이드 →](https://soniqo.audio/guides/chat)
+### LLM 채팅 — [전체 가이드 →](https://soniqo.audio/ko/guides/chat)
 
 ```swift
 import Qwen3Chat
@@ -252,7 +252,7 @@ chat.chat(messages: [(.user, "Explain MLX in one sentence")]) { token, isFinal i
 }
 ```
 
-### 음성 활동 감지 — [전체 가이드 →](https://soniqo.audio/guides/vad)
+### 음성 활동 감지 — [전체 가이드 →](https://soniqo.audio/ko/guides/vad)
 
 ```swift
 import SpeechVAD
@@ -262,7 +262,7 @@ let segments = vad.detectSpeech(audio: samples, sampleRate: 16000)
 for s in segments { print("\(s.startTime)s → \(s.endTime)s") }
 ```
 
-### 화자 분리 — [전체 가이드 →](https://soniqo.audio/guides/diarize)
+### 화자 분리 — [전체 가이드 →](https://soniqo.audio/ko/guides/diarize)
 
 ```swift
 import SpeechVAD
@@ -272,7 +272,7 @@ let segments = diarizer.diarize(audio: samples, sampleRate: 16000)
 for s in segments { print("Speaker \(s.speakerId): \(s.startTime)s - \(s.endTime)s") }
 ```
 
-### 음성 향상 — [전체 가이드 →](https://soniqo.audio/guides/denoise)
+### 음성 향상 — [전체 가이드 →](https://soniqo.audio/ko/guides/denoise)
 
 ```swift
 import SpeechEnhancement
@@ -281,7 +281,7 @@ let denoiser = try await DeepFilterNet3Model.fromPretrained()
 let clean = try denoiser.enhance(audio: noisySamples, sampleRate: 48000)
 ```
 
-### 음성 파이프라인 (ASR → LLM → TTS) — [전체 가이드 →](https://soniqo.audio/api)
+### 음성 파이프라인 (ASR → LLM → TTS) — [전체 가이드 →](https://soniqo.audio/ko/api)
 
 ```swift
 import SpeechCore
@@ -311,7 +311,7 @@ HTTP REST + WebSocket 엔드포인트로 모든 모델을 공개합니다. OpenA
 
 speech-swift는 모델당 하나의 SPM 타겟으로 분리되어 있어 사용자는 임포트한 것에 대해서만 비용을 지불합니다. 공유 인프라는 `AudioCommon` (프로토콜, 오디오 I/O, HuggingFace 다운로더, `SentencePieceModel`)과 `MLXCommon` (웨이트 로딩, `QuantizedLinear` 헬퍼, `SDPA` 멀티헤드 어텐션 헬퍼)에 있습니다.
 
-**[백엔드, 메모리 테이블, 모듈 맵이 포함된 전체 아키텍처 다이어그램 → soniqo.audio/architecture](https://soniqo.audio/architecture)** · **[API 레퍼런스 → soniqo.audio/api](https://soniqo.audio/api)** · **[벤치마크 → soniqo.audio/benchmarks](https://soniqo.audio/benchmarks)**
+**[백엔드, 메모리 테이블, 모듈 맵이 포함된 전체 아키텍처 다이어그램 → soniqo.audio/architecture](https://soniqo.audio/ko/architecture)** · **[API 레퍼런스 → soniqo.audio/api](https://soniqo.audio/ko/api)** · **[벤치마크 → soniqo.audio/benchmarks](https://soniqo.audio/ko/benchmarks)**
 
 로컬 문서 (리포지토리):
 - **모델:** [Qwen3-ASR](docs/models/asr-model.md) · [Qwen3-TTS](docs/models/tts-model.md) · [CosyVoice](docs/models/cosyvoice-tts.md) · [Kokoro](docs/models/kokoro-tts.md) · [Parakeet TDT](docs/models/parakeet-asr.md) · [Parakeet Streaming](docs/models/parakeet-streaming-asr.md) · [Omnilingual ASR](docs/models/omnilingual-asr.md) · [PersonaPlex](docs/models/personaplex.md) · [FireRedVAD](docs/models/fireredvad.md)

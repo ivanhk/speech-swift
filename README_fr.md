@@ -6,22 +6,22 @@ Modeles IA de parole pour Apple Silicon, propulses par MLX Swift et CoreML.
 
 Reconnaissance, synthese et comprehension vocale embarquees pour Mac et iOS. S'execute entierement en local sur Apple Silicon -- sans cloud, sans cle API, aucune donnee ne quitte l'appareil.
 
-**[📚 Documentation complete →](https://soniqo.audio)** · **[🤗 Modeles HuggingFace](https://huggingface.co/aufklarer)** · **[📝 Blog](https://blog.ivan.digital)**
+**[📚 Documentation complete →](https://soniqo.audio/fr)** · **[🤗 Modeles HuggingFace](https://huggingface.co/aufklarer)** · **[📝 Blog](https://blog.ivan.digital)**
 
-- **[Qwen3-ASR](https://soniqo.audio/guides/transcribe)** -- Reconnaissance vocale (reconnaissance automatique de la parole, 52 langues, MLX + CoreML)
-- **[Parakeet TDT](https://soniqo.audio/guides/parakeet)** -- Reconnaissance vocale via CoreML (Neural Engine, NVIDIA FastConformer + decodeur TDT, 25 langues)
-- **[Omnilingual ASR](https://soniqo.audio/guides/omnilingual)** -- Reconnaissance vocale (Meta wav2vec2 + CTC, **1 672 langues** reparties dans 32 ecritures, CoreML 300M + MLX 300M/1B/3B/7B)
-- **[Dictee en streaming](https://soniqo.audio/guides/dictate)** -- Dictee en temps reel avec resultats partiels et detection de fin d'enonce (Parakeet-EOU-120M)
-- **[Qwen3-ForcedAligner](https://soniqo.audio/guides/align)** -- Alignement temporel au niveau du mot (audio + texte → horodatages)
-- **[Qwen3-TTS](https://soniqo.audio/guides/speak)** -- Synthese vocale (qualite maximale, streaming, locuteurs personnalises, 10 langues)
-- **[CosyVoice TTS](https://soniqo.audio/guides/cosyvoice)** -- TTS en streaming avec clonage vocal, dialogue multi-locuteurs, balises d'emotion (9 langues)
-- **[Kokoro TTS](https://soniqo.audio/guides/kokoro)** -- TTS embarque (82M, CoreML/Neural Engine, 54 voix, compatible iOS, 10 langues)
-- **[Qwen3.5-Chat](https://soniqo.audio/guides/chat)** -- Chat LLM embarque (0.8B, MLX INT4 + CoreML INT8, DeltaNet hybride, tokens en streaming)
-- **[PersonaPlex](https://soniqo.audio/guides/respond)** -- Parole-a-parole en full-duplex (7B, audio entrant → audio sortant, 18 preselections de voix)
-- **[DeepFilterNet3](https://soniqo.audio/guides/denoise)** -- Suppression de bruit en temps reel (2,1M parametres, 48 kHz)
-- **[VAD](https://soniqo.audio/guides/vad)** -- Detection d'activite vocale (Silero streaming, Pyannote hors ligne, FireRedVAD 100+ langues)
-- **[Diarisation de locuteurs](https://soniqo.audio/guides/diarize)** -- Qui a parle quand (pipeline Pyannote, Sortformer de bout en bout sur Neural Engine)
-- **[Empreintes de locuteur](https://soniqo.audio/guides/embed-speaker)** -- WeSpeaker ResNet34 (256 dim), CAM++ (192 dim)
+- **[Qwen3-ASR](https://soniqo.audio/fr/guides/transcribe)** -- Reconnaissance vocale (reconnaissance automatique de la parole, 52 langues, MLX + CoreML)
+- **[Parakeet TDT](https://soniqo.audio/fr/guides/parakeet)** -- Reconnaissance vocale via CoreML (Neural Engine, NVIDIA FastConformer + decodeur TDT, 25 langues)
+- **[Omnilingual ASR](https://soniqo.audio/fr/guides/omnilingual)** -- Reconnaissance vocale (Meta wav2vec2 + CTC, **1 672 langues** reparties dans 32 ecritures, CoreML 300M + MLX 300M/1B/3B/7B)
+- **[Dictee en streaming](https://soniqo.audio/fr/guides/dictate)** -- Dictee en temps reel avec resultats partiels et detection de fin d'enonce (Parakeet-EOU-120M)
+- **[Qwen3-ForcedAligner](https://soniqo.audio/fr/guides/align)** -- Alignement temporel au niveau du mot (audio + texte → horodatages)
+- **[Qwen3-TTS](https://soniqo.audio/fr/guides/speak)** -- Synthese vocale (qualite maximale, streaming, locuteurs personnalises, 10 langues)
+- **[CosyVoice TTS](https://soniqo.audio/fr/guides/cosyvoice)** -- TTS en streaming avec clonage vocal, dialogue multi-locuteurs, balises d'emotion (9 langues)
+- **[Kokoro TTS](https://soniqo.audio/fr/guides/kokoro)** -- TTS embarque (82M, CoreML/Neural Engine, 54 voix, compatible iOS, 10 langues)
+- **[Qwen3.5-Chat](https://soniqo.audio/fr/guides/chat)** -- Chat LLM embarque (0.8B, MLX INT4 + CoreML INT8, DeltaNet hybride, tokens en streaming)
+- **[PersonaPlex](https://soniqo.audio/fr/guides/respond)** -- Parole-a-parole en full-duplex (7B, audio entrant → audio sortant, 18 preselections de voix)
+- **[DeepFilterNet3](https://soniqo.audio/fr/guides/denoise)** -- Suppression de bruit en temps reel (2,1M parametres, 48 kHz)
+- **[VAD](https://soniqo.audio/fr/guides/vad)** -- Detection d'activite vocale (Silero streaming, Pyannote hors ligne, FireRedVAD 100+ langues)
+- **[Diarisation de locuteurs](https://soniqo.audio/fr/guides/diarize)** -- Qui a parle quand (pipeline Pyannote, Sortformer de bout en bout sur Neural Engine)
+- **[Empreintes de locuteur](https://soniqo.audio/fr/guides/embed-speaker)** -- WeSpeaker ResNet34 (256 dim), CAM++ (192 dim)
 
 Articles : [Qwen3-ASR](https://arxiv.org/abs/2601.21337) (Alibaba) · [Qwen3-TTS](https://arxiv.org/abs/2601.15621) (Alibaba) · [Omnilingual ASR](https://arxiv.org/abs/2511.09690) (Meta) · [Parakeet TDT](https://arxiv.org/abs/2304.06795) (NVIDIA) · [CosyVoice 3](https://arxiv.org/abs/2505.17589) (Alibaba) · [Kokoro](https://arxiv.org/abs/2301.01695) (StyleTTS 2) · [PersonaPlex](https://arxiv.org/abs/2602.06053) (NVIDIA) · [Mimi](https://arxiv.org/abs/2410.00037) (Kyutai) · [Sortformer](https://arxiv.org/abs/2409.06656) (NVIDIA)
 
@@ -94,25 +94,25 @@ Produits SPM disponibles : `Qwen3ASR`, `Qwen3TTS`, `Qwen3TTSCoreML`, `ParakeetAS
 
 ## Modeles
 
-Vue compacte ci-dessous. **[Catalogue complet des modeles avec tailles, quantifications, URLs de telechargement et tableaux de memoire → soniqo.audio/architecture](https://soniqo.audio/architecture)**.
+Vue compacte ci-dessous. **[Catalogue complet des modeles avec tailles, quantifications, URLs de telechargement et tableaux de memoire → soniqo.audio/architecture](https://soniqo.audio/fr/architecture)**.
 
 | Modele | Tache | Backends | Tailles | Langues |
 |-------|------|----------|-------|-----------|
-| [Qwen3-ASR](https://soniqo.audio/guides/transcribe) | Parole → Texte | MLX, CoreML (hybride) | 0.6B, 1.7B | 52 |
-| [Parakeet TDT](https://soniqo.audio/guides/parakeet) | Parole → Texte | CoreML (ANE) | 0.6B | 25 europeennes |
-| [Parakeet EOU](https://soniqo.audio/guides/dictate) | Parole → Texte (streaming) | CoreML (ANE) | 120M | 25 europeennes |
-| [Omnilingual ASR](https://soniqo.audio/guides/omnilingual) | Parole → Texte | CoreML (ANE), MLX | 300M / 1B / 3B / 7B | **[1 672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
-| [Qwen3-ForcedAligner](https://soniqo.audio/guides/align) | Audio + Texte → Horodatages | MLX, CoreML | 0.6B | Multi |
-| [Qwen3-TTS](https://soniqo.audio/guides/speak) | Texte → Parole | MLX, CoreML | 0.6B, 1.7B | 10 |
-| [CosyVoice3](https://soniqo.audio/guides/cosyvoice) | Texte → Parole | MLX | 0.5B | 9 |
-| [Kokoro-82M](https://soniqo.audio/guides/kokoro) | Texte → Parole | CoreML (ANE) | 82M | 10 |
-| [Qwen3.5-Chat](https://soniqo.audio/guides/chat) | Texte → Texte (LLM) | MLX, CoreML | 0.8B | Multi |
-| [PersonaPlex](https://soniqo.audio/guides/respond) | Parole → Parole | MLX | 7B | EN |
-| [Silero VAD](https://soniqo.audio/guides/vad) | Detection d'activite vocale | MLX, CoreML | 309K | Agnostique |
-| [Pyannote](https://soniqo.audio/guides/diarize) | VAD + Diarisation | MLX | 1.5M | Agnostique |
-| [Sortformer](https://soniqo.audio/guides/diarize) | Diarisation (E2E) | CoreML (ANE) | — | Agnostique |
-| [DeepFilterNet3](https://soniqo.audio/guides/denoise) | Amelioration de la parole | CoreML | 2.1M | Agnostique |
-| [WeSpeaker](https://soniqo.audio/guides/embed-speaker) | Empreinte de locuteur | MLX, CoreML | 6.6M | Agnostique |
+| [Qwen3-ASR](https://soniqo.audio/fr/guides/transcribe) | Parole → Texte | MLX, CoreML (hybride) | 0.6B, 1.7B | 52 |
+| [Parakeet TDT](https://soniqo.audio/fr/guides/parakeet) | Parole → Texte | CoreML (ANE) | 0.6B | 25 europeennes |
+| [Parakeet EOU](https://soniqo.audio/fr/guides/dictate) | Parole → Texte (streaming) | CoreML (ANE) | 120M | 25 europeennes |
+| [Omnilingual ASR](https://soniqo.audio/fr/guides/omnilingual) | Parole → Texte | CoreML (ANE), MLX | 300M / 1B / 3B / 7B | **[1 672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
+| [Qwen3-ForcedAligner](https://soniqo.audio/fr/guides/align) | Audio + Texte → Horodatages | MLX, CoreML | 0.6B | Multi |
+| [Qwen3-TTS](https://soniqo.audio/fr/guides/speak) | Texte → Parole | MLX, CoreML | 0.6B, 1.7B | 10 |
+| [CosyVoice3](https://soniqo.audio/fr/guides/cosyvoice) | Texte → Parole | MLX | 0.5B | 9 |
+| [Kokoro-82M](https://soniqo.audio/fr/guides/kokoro) | Texte → Parole | CoreML (ANE) | 82M | 10 |
+| [Qwen3.5-Chat](https://soniqo.audio/fr/guides/chat) | Texte → Texte (LLM) | MLX, CoreML | 0.8B | Multi |
+| [PersonaPlex](https://soniqo.audio/fr/guides/respond) | Parole → Parole | MLX | 7B | EN |
+| [Silero VAD](https://soniqo.audio/fr/guides/vad) | Detection d'activite vocale | MLX, CoreML | 309K | Agnostique |
+| [Pyannote](https://soniqo.audio/fr/guides/diarize) | VAD + Diarisation | MLX | 1.5M | Agnostique |
+| [Sortformer](https://soniqo.audio/fr/guides/diarize) | Diarisation (E2E) | CoreML (ANE) | — | Agnostique |
+| [DeepFilterNet3](https://soniqo.audio/fr/guides/denoise) | Amelioration de la parole | CoreML | 2.1M | Agnostique |
+| [WeSpeaker](https://soniqo.audio/fr/guides/embed-speaker) | Empreinte de locuteur | MLX, CoreML | 6.6M | Agnostique |
 
 ## Installation
 
@@ -133,7 +133,7 @@ audio speak "Hello world"
 audio respond --input question.wav --transcript
 ```
 
-**[Reference CLI complete →](https://soniqo.audio/cli)**
+**[Reference CLI complete →](https://soniqo.audio/fr/cli)**
 
 ### Swift Package Manager
 
@@ -176,11 +176,11 @@ make build
 
 `make build` compile le package Swift **et** la bibliotheque de shaders MLX Metal. La bibliotheque Metal est necessaire pour l'inference GPU -- sans elle, vous verrez `Failed to load the default metallib` a l'execution. `make debug` pour les builds de debug, `make test` pour la suite de tests.
 
-**[Guide complet de compilation et installation →](https://soniqo.audio/getting-started)**
+**[Guide complet de compilation et installation →](https://soniqo.audio/fr/getting-started)**
 
 ## Applications de demonstration
 
-- **[DictateDemo](Examples/DictateDemo/)** ([docs](https://soniqo.audio/guides/dictate)) -- Dictee en streaming dans la barre de menus macOS avec partiels en direct, detection de fin d'enonce basee sur VAD et copie en un clic. S'execute comme agent en arriere-plan (Parakeet-EOU-120M + Silero VAD).
+- **[DictateDemo](Examples/DictateDemo/)** ([docs](https://soniqo.audio/fr/guides/dictate)) -- Dictee en streaming dans la barre de menus macOS avec partiels en direct, detection de fin d'enonce basee sur VAD et copie en un clic. S'execute comme agent en arriere-plan (Parakeet-EOU-120M + Silero VAD).
 - **[iOSEchoDemo](Examples/iOSEchoDemo/)** -- Demo d'echo iOS (Parakeet ASR + Kokoro TTS). Appareil et simulateur.
 - **[PersonaPlexDemo](Examples/PersonaPlexDemo/)** -- Assistant vocal conversationnel avec entree micro, VAD et contexte multi-tours. macOS. RTF ~0,94 sur M2 Max (plus rapide que le temps reel).
 - **[SpeechDemo](Examples/SpeechDemo/)** -- Dictee et synthese TTS dans une interface a onglets. macOS.
@@ -189,9 +189,9 @@ Le README de chaque demo contient les instructions de compilation.
 
 ## Exemples de code
 
-Les extraits ci-dessous montrent le chemin minimal pour chaque domaine. Chaque section renvoie vers un guide complet sur [soniqo.audio](https://soniqo.audio) avec les options de configuration, plusieurs backends, les patrons de streaming et les recettes CLI.
+Les extraits ci-dessous montrent le chemin minimal pour chaque domaine. Chaque section renvoie vers un guide complet sur [soniqo.audio](https://soniqo.audio/fr) avec les options de configuration, plusieurs backends, les patrons de streaming et les recettes CLI.
 
-### Reconnaissance vocale -- [guide complet →](https://soniqo.audio/guides/transcribe)
+### Reconnaissance vocale -- [guide complet →](https://soniqo.audio/fr/guides/transcribe)
 
 ```swift
 import Qwen3ASR
@@ -200,9 +200,9 @@ let model = try await Qwen3ASRModel.fromPretrained()
 let text = model.transcribe(audio: audioSamples, sampleRate: 16000)
 ```
 
-Backends alternatifs : [Parakeet TDT](https://soniqo.audio/guides/parakeet) (CoreML, 32× temps reel), [Omnilingual ASR](https://soniqo.audio/guides/omnilingual) (1 672 langues, CoreML ou MLX), [Dictee en streaming](https://soniqo.audio/guides/dictate) (partiels en direct).
+Backends alternatifs : [Parakeet TDT](https://soniqo.audio/fr/guides/parakeet) (CoreML, 32× temps reel), [Omnilingual ASR](https://soniqo.audio/fr/guides/omnilingual) (1 672 langues, CoreML ou MLX), [Dictee en streaming](https://soniqo.audio/fr/guides/dictate) (partiels en direct).
 
-### Alignement force -- [guide complet →](https://soniqo.audio/guides/align)
+### Alignement force -- [guide complet →](https://soniqo.audio/fr/guides/align)
 
 ```swift
 import Qwen3ASR
@@ -218,7 +218,7 @@ for word in aligned {
 }
 ```
 
-### Synthese vocale -- [guide complet →](https://soniqo.audio/guides/speak)
+### Synthese vocale -- [guide complet →](https://soniqo.audio/fr/guides/speak)
 
 ```swift
 import Qwen3TTS
@@ -229,9 +229,9 @@ let audio = model.synthesize(text: "Hello world", language: "english")
 try WAVWriter.write(samples: audio, sampleRate: 24000, to: outputURL)
 ```
 
-Moteurs TTS alternatifs : [CosyVoice3](https://soniqo.audio/guides/cosyvoice) (streaming + clonage + balises d'emotion), [Kokoro-82M](https://soniqo.audio/guides/kokoro) (compatible iOS, 54 voix), [Clonage vocal](https://soniqo.audio/guides/voice-cloning).
+Moteurs TTS alternatifs : [CosyVoice3](https://soniqo.audio/fr/guides/cosyvoice) (streaming + clonage + balises d'emotion), [Kokoro-82M](https://soniqo.audio/fr/guides/kokoro) (compatible iOS, 54 voix), [Clonage vocal](https://soniqo.audio/fr/guides/voice-cloning).
 
-### Parole-a-parole -- [guide complet →](https://soniqo.audio/guides/respond)
+### Parole-a-parole -- [guide complet →](https://soniqo.audio/fr/guides/respond)
 
 ```swift
 import PersonaPlex
@@ -241,7 +241,7 @@ let responseAudio = model.respond(userAudio: userSamples)
 // Sortie Float32 mono 24 kHz prete pour la lecture
 ```
 
-### Chat LLM -- [guide complet →](https://soniqo.audio/guides/chat)
+### Chat LLM -- [guide complet →](https://soniqo.audio/fr/guides/chat)
 
 ```swift
 import Qwen3Chat
@@ -252,7 +252,7 @@ chat.chat(messages: [(.user, "Explain MLX in one sentence")]) { token, isFinal i
 }
 ```
 
-### Detection d'activite vocale -- [guide complet →](https://soniqo.audio/guides/vad)
+### Detection d'activite vocale -- [guide complet →](https://soniqo.audio/fr/guides/vad)
 
 ```swift
 import SpeechVAD
@@ -262,7 +262,7 @@ let segments = vad.detectSpeech(audio: samples, sampleRate: 16000)
 for s in segments { print("\(s.startTime)s → \(s.endTime)s") }
 ```
 
-### Diarisation de locuteurs -- [guide complet →](https://soniqo.audio/guides/diarize)
+### Diarisation de locuteurs -- [guide complet →](https://soniqo.audio/fr/guides/diarize)
 
 ```swift
 import SpeechVAD
@@ -272,7 +272,7 @@ let segments = diarizer.diarize(audio: samples, sampleRate: 16000)
 for s in segments { print("Speaker \(s.speakerId): \(s.startTime)s - \(s.endTime)s") }
 ```
 
-### Amelioration de la parole -- [guide complet →](https://soniqo.audio/guides/denoise)
+### Amelioration de la parole -- [guide complet →](https://soniqo.audio/fr/guides/denoise)
 
 ```swift
 import SpeechEnhancement
@@ -281,7 +281,7 @@ let denoiser = try await DeepFilterNet3Model.fromPretrained()
 let clean = try denoiser.enhance(audio: noisySamples, sampleRate: 48000)
 ```
 
-### Voice Pipeline (ASR → LLM → TTS) -- [guide complet →](https://soniqo.audio/api)
+### Voice Pipeline (ASR → LLM → TTS) -- [guide complet →](https://soniqo.audio/fr/api)
 
 ```swift
 import SpeechCore
@@ -311,7 +311,7 @@ Expose chaque modele via des endpoints HTTP REST + WebSocket, y compris un WebSo
 
 speech-swift est decoupe en une cible SPM par modele, de sorte que les consommateurs ne paient que ce qu'ils importent. L'infrastructure partagee reside dans `AudioCommon` (protocoles, I/O audio, telechargeur HuggingFace, `SentencePieceModel`) et `MLXCommon` (chargement de poids, aides `QuantizedLinear`, aide d'attention multi-tete `SDPA`).
 
-**[Diagramme d'architecture complet avec backends, tableaux de memoire et carte des modules → soniqo.audio/architecture](https://soniqo.audio/architecture)** · **[Reference d'API → soniqo.audio/api](https://soniqo.audio/api)** · **[Benchmarks → soniqo.audio/benchmarks](https://soniqo.audio/benchmarks)**
+**[Diagramme d'architecture complet avec backends, tableaux de memoire et carte des modules → soniqo.audio/architecture](https://soniqo.audio/fr/architecture)** · **[Reference d'API → soniqo.audio/api](https://soniqo.audio/fr/api)** · **[Benchmarks → soniqo.audio/benchmarks](https://soniqo.audio/fr/benchmarks)**
 
 Docs locales (depot) :
 - **Modeles :** [Qwen3-ASR](docs/models/asr-model.md) · [Qwen3-TTS](docs/models/tts-model.md) · [CosyVoice](docs/models/cosyvoice-tts.md) · [Kokoro](docs/models/kokoro-tts.md) · [Parakeet TDT](docs/models/parakeet-asr.md) · [Parakeet Streaming](docs/models/parakeet-streaming-asr.md) · [Omnilingual ASR](docs/models/omnilingual-asr.md) · [PersonaPlex](docs/models/personaplex.md) · [FireRedVAD](docs/models/fireredvad.md)

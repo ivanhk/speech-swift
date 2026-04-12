@@ -6,22 +6,22 @@
 
 Распознавание, синтез и понимание речи на устройстве для Mac и iOS. Работает полностью локально на Apple Silicon — без облака, без API-ключей, данные не покидают устройство.
 
-**[📚 Полная документация →](https://soniqo.audio)** · **[🤗 Модели на HuggingFace](https://huggingface.co/aufklarer)** · **[📝 Блог](https://blog.ivan.digital)**
+**[📚 Полная документация →](https://soniqo.audio/ru)** · **[🤗 Модели на HuggingFace](https://huggingface.co/aufklarer)** · **[📝 Блог](https://blog.ivan.digital)**
 
-- **[Qwen3-ASR](https://soniqo.audio/guides/transcribe)** — Распознавание речи (автоматическое распознавание речи, 52 языка, MLX + CoreML)
-- **[Parakeet TDT](https://soniqo.audio/guides/parakeet)** — Распознавание речи через CoreML (Neural Engine, NVIDIA FastConformer + TDT-декодер, 25 языков)
-- **[Omnilingual ASR](https://soniqo.audio/guides/omnilingual)** — Распознавание речи (Meta wav2vec2 + CTC, **1 672 языка** в 32 письменностях, CoreML 300M + MLX 300M/1B/3B/7B)
-- **[Streaming Dictation](https://soniqo.audio/guides/dictate)** — Диктовка в реальном времени с частичными результатами и детекцией окончания реплики (Parakeet-EOU-120M)
-- **[Qwen3-ForcedAligner](https://soniqo.audio/guides/align)** — Выравнивание временных меток на уровне слов (аудио + текст → временные метки)
-- **[Qwen3-TTS](https://soniqo.audio/guides/speak)** — Синтез речи (наивысшее качество, потоковый режим, пользовательские голоса, 10 языков)
-- **[CosyVoice TTS](https://soniqo.audio/guides/cosyvoice)** — Потоковый синтез речи с клонированием голоса, многоголосым диалогом, тегами эмоций (9 языков)
-- **[Kokoro TTS](https://soniqo.audio/guides/kokoro)** — Синтез речи на устройстве (82M, CoreML/Neural Engine, 54 голоса, готов для iOS, 10 языков)
-- **[Qwen3.5-Chat](https://soniqo.audio/guides/chat)** — Локальный чат на базе LLM (0.8B, MLX INT4 + CoreML INT8, гибрид DeltaNet, потоковая генерация токенов)
-- **[PersonaPlex](https://soniqo.audio/guides/respond)** — Полнодуплексная генерация речи из речи (7B, аудио на входе → аудио на выходе, 18 голосовых пресетов)
-- **[DeepFilterNet3](https://soniqo.audio/guides/denoise)** — Подавление шума в реальном времени (2.1M параметров, 48 кГц)
-- **[VAD](https://soniqo.audio/guides/vad)** — Обнаружение голосовой активности (Silero потоковый, Pyannote офлайн, FireRedVAD 100+ языков)
-- **[Speaker Diarization](https://soniqo.audio/guides/diarize)** — Кто говорил и когда (Pyannote-пайплайн, сквозной Sortformer на Neural Engine)
-- **[Speaker Embeddings](https://soniqo.audio/guides/embed-speaker)** — WeSpeaker ResNet34 (256-мерные векторы), CAM++ (192-мерные)
+- **[Qwen3-ASR](https://soniqo.audio/ru/guides/transcribe)** — Распознавание речи (автоматическое распознавание речи, 52 языка, MLX + CoreML)
+- **[Parakeet TDT](https://soniqo.audio/ru/guides/parakeet)** — Распознавание речи через CoreML (Neural Engine, NVIDIA FastConformer + TDT-декодер, 25 языков)
+- **[Omnilingual ASR](https://soniqo.audio/ru/guides/omnilingual)** — Распознавание речи (Meta wav2vec2 + CTC, **1 672 языка** в 32 письменностях, CoreML 300M + MLX 300M/1B/3B/7B)
+- **[Streaming Dictation](https://soniqo.audio/ru/guides/dictate)** — Диктовка в реальном времени с частичными результатами и детекцией окончания реплики (Parakeet-EOU-120M)
+- **[Qwen3-ForcedAligner](https://soniqo.audio/ru/guides/align)** — Выравнивание временных меток на уровне слов (аудио + текст → временные метки)
+- **[Qwen3-TTS](https://soniqo.audio/ru/guides/speak)** — Синтез речи (наивысшее качество, потоковый режим, пользовательские голоса, 10 языков)
+- **[CosyVoice TTS](https://soniqo.audio/ru/guides/cosyvoice)** — Потоковый синтез речи с клонированием голоса, многоголосым диалогом, тегами эмоций (9 языков)
+- **[Kokoro TTS](https://soniqo.audio/ru/guides/kokoro)** — Синтез речи на устройстве (82M, CoreML/Neural Engine, 54 голоса, готов для iOS, 10 языков)
+- **[Qwen3.5-Chat](https://soniqo.audio/ru/guides/chat)** — Локальный чат на базе LLM (0.8B, MLX INT4 + CoreML INT8, гибрид DeltaNet, потоковая генерация токенов)
+- **[PersonaPlex](https://soniqo.audio/ru/guides/respond)** — Полнодуплексная генерация речи из речи (7B, аудио на входе → аудио на выходе, 18 голосовых пресетов)
+- **[DeepFilterNet3](https://soniqo.audio/ru/guides/denoise)** — Подавление шума в реальном времени (2.1M параметров, 48 кГц)
+- **[VAD](https://soniqo.audio/ru/guides/vad)** — Обнаружение голосовой активности (Silero потоковый, Pyannote офлайн, FireRedVAD 100+ языков)
+- **[Speaker Diarization](https://soniqo.audio/ru/guides/diarize)** — Кто говорил и когда (Pyannote-пайплайн, сквозной Sortformer на Neural Engine)
+- **[Speaker Embeddings](https://soniqo.audio/ru/guides/embed-speaker)** — WeSpeaker ResNet34 (256-мерные векторы), CAM++ (192-мерные)
 
 Статьи: [Qwen3-ASR](https://arxiv.org/abs/2601.21337) (Alibaba) · [Qwen3-TTS](https://arxiv.org/abs/2601.15621) (Alibaba) · [Omnilingual ASR](https://arxiv.org/abs/2511.09690) (Meta) · [Parakeet TDT](https://arxiv.org/abs/2304.06795) (NVIDIA) · [CosyVoice 3](https://arxiv.org/abs/2505.17589) (Alibaba) · [Kokoro](https://arxiv.org/abs/2301.01695) (StyleTTS 2) · [PersonaPlex](https://arxiv.org/abs/2602.06053) (NVIDIA) · [Mimi](https://arxiv.org/abs/2410.00037) (Kyutai) · [Sortformer](https://arxiv.org/abs/2409.06656) (NVIDIA)
 
@@ -94,25 +94,25 @@ struct DictateView: View {
 
 ## Модели
 
-Краткий обзор ниже. **[Полный каталог моделей со всеми размерами, квантизациями, ссылками на скачивание и таблицами памяти → soniqo.audio/architecture](https://soniqo.audio/architecture)**.
+Краткий обзор ниже. **[Полный каталог моделей со всеми размерами, квантизациями, ссылками на скачивание и таблицами памяти → soniqo.audio/architecture](https://soniqo.audio/ru/architecture)**.
 
 | Модель | Задача | Бэкенды | Размеры | Языки |
 |--------|--------|---------|---------|-------|
-| [Qwen3-ASR](https://soniqo.audio/guides/transcribe) | Речь → Текст | MLX, CoreML (гибрид) | 0.6B, 1.7B | 52 |
-| [Parakeet TDT](https://soniqo.audio/guides/parakeet) | Речь → Текст | CoreML (ANE) | 0.6B | 25 европейских |
-| [Parakeet EOU](https://soniqo.audio/guides/dictate) | Речь → Текст (потоковый) | CoreML (ANE) | 120M | 25 европейских |
-| [Omnilingual ASR](https://soniqo.audio/guides/omnilingual) | Речь → Текст | CoreML (ANE), MLX | 300M / 1B / 3B / 7B | **[1 672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
-| [Qwen3-ForcedAligner](https://soniqo.audio/guides/align) | Аудио + Текст → Метки | MLX, CoreML | 0.6B | Многоязычный |
-| [Qwen3-TTS](https://soniqo.audio/guides/speak) | Текст → Речь | MLX, CoreML | 0.6B, 1.7B | 10 |
-| [CosyVoice3](https://soniqo.audio/guides/cosyvoice) | Текст → Речь | MLX | 0.5B | 9 |
-| [Kokoro-82M](https://soniqo.audio/guides/kokoro) | Текст → Речь | CoreML (ANE) | 82M | 10 |
-| [Qwen3.5-Chat](https://soniqo.audio/guides/chat) | Текст → Текст (LLM) | MLX, CoreML | 0.8B | Многоязычный |
-| [PersonaPlex](https://soniqo.audio/guides/respond) | Речь → Речь | MLX | 7B | EN |
-| [Silero VAD](https://soniqo.audio/guides/vad) | Детектор речи | MLX, CoreML | 309K | Универсальный |
-| [Pyannote](https://soniqo.audio/guides/diarize) | VAD + Диаризация | MLX | 1.5M | Универсальный |
-| [Sortformer](https://soniqo.audio/guides/diarize) | Диаризация (E2E) | CoreML (ANE) | — | Универсальный |
-| [DeepFilterNet3](https://soniqo.audio/guides/denoise) | Улучшение речи | CoreML | 2.1M | Универсальный |
-| [WeSpeaker](https://soniqo.audio/guides/embed-speaker) | Эмбеддинги спикеров | MLX, CoreML | 6.6M | Универсальный |
+| [Qwen3-ASR](https://soniqo.audio/ru/guides/transcribe) | Речь → Текст | MLX, CoreML (гибрид) | 0.6B, 1.7B | 52 |
+| [Parakeet TDT](https://soniqo.audio/ru/guides/parakeet) | Речь → Текст | CoreML (ANE) | 0.6B | 25 европейских |
+| [Parakeet EOU](https://soniqo.audio/ru/guides/dictate) | Речь → Текст (потоковый) | CoreML (ANE) | 120M | 25 европейских |
+| [Omnilingual ASR](https://soniqo.audio/ru/guides/omnilingual) | Речь → Текст | CoreML (ANE), MLX | 300M / 1B / 3B / 7B | **[1 672](https://github.com/facebookresearch/omnilingual-asr/blob/main/src/omnilingual_asr/models/wav2vec2_llama/lang_ids.py)** |
+| [Qwen3-ForcedAligner](https://soniqo.audio/ru/guides/align) | Аудио + Текст → Метки | MLX, CoreML | 0.6B | Многоязычный |
+| [Qwen3-TTS](https://soniqo.audio/ru/guides/speak) | Текст → Речь | MLX, CoreML | 0.6B, 1.7B | 10 |
+| [CosyVoice3](https://soniqo.audio/ru/guides/cosyvoice) | Текст → Речь | MLX | 0.5B | 9 |
+| [Kokoro-82M](https://soniqo.audio/ru/guides/kokoro) | Текст → Речь | CoreML (ANE) | 82M | 10 |
+| [Qwen3.5-Chat](https://soniqo.audio/ru/guides/chat) | Текст → Текст (LLM) | MLX, CoreML | 0.8B | Многоязычный |
+| [PersonaPlex](https://soniqo.audio/ru/guides/respond) | Речь → Речь | MLX | 7B | EN |
+| [Silero VAD](https://soniqo.audio/ru/guides/vad) | Детектор речи | MLX, CoreML | 309K | Универсальный |
+| [Pyannote](https://soniqo.audio/ru/guides/diarize) | VAD + Диаризация | MLX | 1.5M | Универсальный |
+| [Sortformer](https://soniqo.audio/ru/guides/diarize) | Диаризация (E2E) | CoreML (ANE) | — | Универсальный |
+| [DeepFilterNet3](https://soniqo.audio/ru/guides/denoise) | Улучшение речи | CoreML | 2.1M | Универсальный |
+| [WeSpeaker](https://soniqo.audio/ru/guides/embed-speaker) | Эмбеддинги спикеров | MLX, CoreML | 6.6M | Универсальный |
 
 ## Установка
 
@@ -133,7 +133,7 @@ audio speak "Hello world"
 audio respond --input question.wav --transcript
 ```
 
-**[Полный справочник CLI →](https://soniqo.audio/cli)**
+**[Полный справочник CLI →](https://soniqo.audio/ru/cli)**
 
 ### Swift Package Manager
 
@@ -176,11 +176,11 @@ make build
 
 `make build` компилирует Swift-пакет **и** библиотеку Metal-шейдеров MLX. Metal-библиотека необходима для GPU-инференса — без неё при запуске будет ошибка `Failed to load the default metallib`. `make debug` для отладочных сборок, `make test` для тестового набора.
 
-**[Полное руководство по сборке и установке →](https://soniqo.audio/getting-started)**
+**[Полное руководство по сборке и установке →](https://soniqo.audio/ru/getting-started)**
 
 ## Демо-приложения
 
-- **[DictateDemo](Examples/DictateDemo/)** ([документация](https://soniqo.audio/guides/dictate)) — macOS-приложение в строке меню с потоковой диктовкой, живыми частичными результатами, детекцией окончания реплики по VAD и копированием в один клик. Работает как фоновый агент (Parakeet-EOU-120M + Silero VAD).
+- **[DictateDemo](Examples/DictateDemo/)** ([документация](https://soniqo.audio/ru/guides/dictate)) — macOS-приложение в строке меню с потоковой диктовкой, живыми частичными результатами, детекцией окончания реплики по VAD и копированием в один клик. Работает как фоновый агент (Parakeet-EOU-120M + Silero VAD).
 - **[iOSEchoDemo](Examples/iOSEchoDemo/)** — iOS-эхо-демо (Parakeet ASR + Kokoro TTS). Устройство и симулятор.
 - **[PersonaPlexDemo](Examples/PersonaPlexDemo/)** — Диалоговый голосовой ассистент с микрофонным вводом, VAD и многоходовым контекстом. macOS. RTF ~0.94 на M2 Max (быстрее реального времени).
 - **[SpeechDemo](Examples/SpeechDemo/)** — Диктовка и синтез TTS в интерфейсе с вкладками. macOS.
@@ -189,9 +189,9 @@ make build
 
 ## Примеры кода
 
-Сниппеты ниже показывают минимальный путь для каждой области. Каждый раздел ссылается на полное руководство на [soniqo.audio](https://soniqo.audio) с опциями конфигурации, множественными бэкендами, шаблонами потоковой обработки и примерами CLI.
+Сниппеты ниже показывают минимальный путь для каждой области. Каждый раздел ссылается на полное руководство на [soniqo.audio](https://soniqo.audio/ru) с опциями конфигурации, множественными бэкендами, шаблонами потоковой обработки и примерами CLI.
 
-### Распознавание речи — [полное руководство →](https://soniqo.audio/guides/transcribe)
+### Распознавание речи — [полное руководство →](https://soniqo.audio/ru/guides/transcribe)
 
 ```swift
 import Qwen3ASR
@@ -200,9 +200,9 @@ let model = try await Qwen3ASRModel.fromPretrained()
 let text = model.transcribe(audio: audioSamples, sampleRate: 16000)
 ```
 
-Альтернативные бэкенды: [Parakeet TDT](https://soniqo.audio/guides/parakeet) (CoreML, 32× быстрее реального времени), [Omnilingual ASR](https://soniqo.audio/guides/omnilingual) (1 672 языка, CoreML или MLX), [Потоковая диктовка](https://soniqo.audio/guides/dictate) (живые частичные результаты).
+Альтернативные бэкенды: [Parakeet TDT](https://soniqo.audio/ru/guides/parakeet) (CoreML, 32× быстрее реального времени), [Omnilingual ASR](https://soniqo.audio/ru/guides/omnilingual) (1 672 языка, CoreML или MLX), [Потоковая диктовка](https://soniqo.audio/ru/guides/dictate) (живые частичные результаты).
 
-### Выравнивание с форсированием — [полное руководство →](https://soniqo.audio/guides/align)
+### Выравнивание с форсированием — [полное руководство →](https://soniqo.audio/ru/guides/align)
 
 ```swift
 import Qwen3ASR
@@ -218,7 +218,7 @@ for word in aligned {
 }
 ```
 
-### Синтез речи — [полное руководство →](https://soniqo.audio/guides/speak)
+### Синтез речи — [полное руководство →](https://soniqo.audio/ru/guides/speak)
 
 ```swift
 import Qwen3TTS
@@ -229,9 +229,9 @@ let audio = model.synthesize(text: "Hello world", language: "english")
 try WAVWriter.write(samples: audio, sampleRate: 24000, to: outputURL)
 ```
 
-Альтернативные TTS-движки: [CosyVoice3](https://soniqo.audio/guides/cosyvoice) (потоковый + клонирование голоса + теги эмоций), [Kokoro-82M](https://soniqo.audio/guides/kokoro) (готов для iOS, 54 голоса), [Клонирование голоса](https://soniqo.audio/guides/voice-cloning).
+Альтернативные TTS-движки: [CosyVoice3](https://soniqo.audio/ru/guides/cosyvoice) (потоковый + клонирование голоса + теги эмоций), [Kokoro-82M](https://soniqo.audio/ru/guides/kokoro) (готов для iOS, 54 голоса), [Клонирование голоса](https://soniqo.audio/ru/guides/voice-cloning).
 
-### Речь-в-речь — [полное руководство →](https://soniqo.audio/guides/respond)
+### Речь-в-речь — [полное руководство →](https://soniqo.audio/ru/guides/respond)
 
 ```swift
 import PersonaPlex
@@ -241,7 +241,7 @@ let responseAudio = model.respond(userAudio: userSamples)
 // 24 кГц моно Float32 — готово к воспроизведению
 ```
 
-### LLM-чат — [полное руководство →](https://soniqo.audio/guides/chat)
+### LLM-чат — [полное руководство →](https://soniqo.audio/ru/guides/chat)
 
 ```swift
 import Qwen3Chat
@@ -252,7 +252,7 @@ chat.chat(messages: [(.user, "Explain MLX in one sentence")]) { token, isFinal i
 }
 ```
 
-### Детектор голосовой активности — [полное руководство →](https://soniqo.audio/guides/vad)
+### Детектор голосовой активности — [полное руководство →](https://soniqo.audio/ru/guides/vad)
 
 ```swift
 import SpeechVAD
@@ -262,7 +262,7 @@ let segments = vad.detectSpeech(audio: samples, sampleRate: 16000)
 for s in segments { print("\(s.startTime)s → \(s.endTime)s") }
 ```
 
-### Диаризация спикеров — [полное руководство →](https://soniqo.audio/guides/diarize)
+### Диаризация спикеров — [полное руководство →](https://soniqo.audio/ru/guides/diarize)
 
 ```swift
 import SpeechVAD
@@ -272,7 +272,7 @@ let segments = diarizer.diarize(audio: samples, sampleRate: 16000)
 for s in segments { print("Speaker \(s.speakerId): \(s.startTime)s - \(s.endTime)s") }
 ```
 
-### Улучшение речи — [полное руководство →](https://soniqo.audio/guides/denoise)
+### Улучшение речи — [полное руководство →](https://soniqo.audio/ru/guides/denoise)
 
 ```swift
 import SpeechEnhancement
@@ -281,7 +281,7 @@ let denoiser = try await DeepFilterNet3Model.fromPretrained()
 let clean = try denoiser.enhance(audio: noisySamples, sampleRate: 48000)
 ```
 
-### Голосовой пайплайн (ASR → LLM → TTS) — [полное руководство →](https://soniqo.audio/api)
+### Голосовой пайплайн (ASR → LLM → TTS) — [полное руководство →](https://soniqo.audio/ru/api)
 
 ```swift
 import SpeechCore
@@ -311,7 +311,7 @@ audio-server --port 8080
 
 speech-swift разделён на отдельные SPM-таргеты для каждой модели, чтобы потребители платили только за то, что импортируют. Общая инфраструктура находится в `AudioCommon` (протоколы, аудио ввод/вывод, загрузчик HuggingFace, `SentencePieceModel`) и `MLXCommon` (загрузка весов, хелперы `QuantizedLinear`, хелпер `SDPA` для multi-head attention).
 
-**[Полная архитектурная диаграмма с бэкендами, таблицами памяти и картой модулей → soniqo.audio/architecture](https://soniqo.audio/architecture)** · **[Справочник API → soniqo.audio/api](https://soniqo.audio/api)** · **[Бенчмарки → soniqo.audio/benchmarks](https://soniqo.audio/benchmarks)**
+**[Полная архитектурная диаграмма с бэкендами, таблицами памяти и картой модулей → soniqo.audio/architecture](https://soniqo.audio/ru/architecture)** · **[Справочник API → soniqo.audio/api](https://soniqo.audio/ru/api)** · **[Бенчмарки → soniqo.audio/benchmarks](https://soniqo.audio/ru/benchmarks)**
 
 Локальная документация (в репозитории):
 - **Модели:** [Qwen3-ASR](docs/models/asr-model.md) · [Qwen3-TTS](docs/models/tts-model.md) · [CosyVoice](docs/models/cosyvoice-tts.md) · [Kokoro](docs/models/kokoro-tts.md) · [Parakeet TDT](docs/models/parakeet-asr.md) · [Parakeet Streaming](docs/models/parakeet-streaming-asr.md) · [Omnilingual ASR](docs/models/omnilingual-asr.md) · [PersonaPlex](docs/models/personaplex.md) · [FireRedVAD](docs/models/fireredvad.md)
