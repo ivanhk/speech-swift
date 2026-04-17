@@ -24,11 +24,12 @@ public func runAsync(_ block: @escaping () async throws -> Void) throws {
 
 /// Git commit hash baked in at build time, or read from .git at runtime.
 ///
-/// ``Process`` is only available on macOS / Linux; iOS / tvOS / watchOS /
-/// visionOS get a placeholder so shared CLI-helper types (e.g. ``runAsync``,
-/// ``reportProgress``) can still be reached from iOS-buildable targets.
+/// ``Process`` isn't available on iOS and the rest of Apple's embedded
+/// platforms, so the CLI-only git probe is gated on macOS. iOS-bound targets
+/// (libraries sharing this module via ``runAsync`` / ``reportProgress``)
+/// still compile cleanly and just see ``"unknown"``.
 public let buildVersion: String = {
-    #if os(macOS) || os(Linux)
+    #if os(macOS)
     let pipe = Pipe()
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
