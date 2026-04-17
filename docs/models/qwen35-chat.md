@@ -96,9 +96,10 @@ Key naming:
 
 Repo: `aufklarer/Qwen3.5-0.8B-Chat-CoreML` with `int4/` and `int8/` subdirectories.
 
-Split into two models:
-- `embedding.mlpackage` — token embedding lookup
-- `decoder.mlpackage` — full transformer with stateful DeltaNet (MLState) and KV cache
+Split into two pre-compiled models (shipped as `.mlmodelc`; the legacy
+`.mlpackage` still lives in the repo for older builds):
+- `embedding.mlmodelc` — token embedding lookup
+- `decoder.mlmodelc` — full transformer with stateful DeltaNet (MLState) and KV cache
 
 ## Swift API
 

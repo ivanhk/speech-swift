@@ -48,8 +48,10 @@ swift run audio denoise noisy.wav --output clean.wav
 python scripts/convert_deepfilternet3.py [--output OUTPUT_DIR]
 ```
 
-Outputs:
-- `DeepFilterNet3.mlpackage` (~4.2 MB) — Core ML FP16 model
+Outputs (the publish flow compiles the `.mlpackage` to `.mlmodelc` and ships
+both for backward compatibility; speech-swift only loads the compiled bundle):
+- `DeepFilterNet3.mlmodelc` (~4.2 MB) — Core ML FP16 model, pre-compiled
+- `DeepFilterNet3.mlpackage` (~4.2 MB) — source `.mlpackage`, kept for legacy clients
 - `auxiliary.npz` (~126 KB) — ERB filterbank, Vorbis window, normalization states
 
 ## References

@@ -192,4 +192,4 @@ python scripts/convert_forced_aligner.py --coreml --coreml-bits 8 --upload --rep
 
 MLX: quantizes text decoder (attention + MLP + embeddings) to N-bit. Audio encoder and classify head kept as float16. `--bits 0` keeps everything as float16.
 
-CoreML: traces audio encoder, text decoder + classify head, and embedding as separate `.mlpackage` models with INT4/INT8 palettization.
+CoreML: traces audio encoder, text decoder + classify head, and embedding as separate models with INT4/INT8 palettization. Published as pre-compiled `.mlmodelc` bundles.
