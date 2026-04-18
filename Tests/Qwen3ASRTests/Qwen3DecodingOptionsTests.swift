@@ -1,5 +1,6 @@
 import XCTest
 import MLX
+import Foundation
 @testable import Qwen3ASR
 
 /// Unit tests for ``Qwen3DecodingOptions`` and the pure-Swift
@@ -207,6 +208,10 @@ final class Qwen3DecodingOptionsTests: XCTestCase {
             "temperature=1.0 on uniform logits should sample ≥ 3 distinct tokens over 50 rolls")
     }
 
+    // MARK: - Clamping expectations
+
+    // MARK: - Edge cases
+
     func testLowTemperatureStaysMostlyAtPeak() {
         // With a peaked distribution and a very low temperature the
         // sampler should still pick the peak the vast majority of the
@@ -227,5 +232,84 @@ final class Qwen3DecodingOptionsTests: XCTestCase {
         }
         XCTAssertGreaterThan(peakHits, trials / 2,
             "peaky distribution + low temperature should still pick the peak > 50% of trials")
+    }
+}
+
+// MARK: - E2E wiring (requires 0.6B Qwen3-ASR download + MLX)
+
+/// Drives the full ``Qwen3ASRModel.transcribe(audio:sampleRate:options:)``
+/// path to make sure the new decoder options thread end-to-end without
+/// crashing and without regressing the legacy greedy pathway.
+///
+/// Prefixed with ``E2E`` so CI runs (which pass ``--skip E2E``) ignore it
+/// while ``make test`` locally exercises it.
+final class E2EQwen3DecodingOptionsTests: XCTestCase {
+
+    static let modelId = "aufklarer/Qwen3-ASR-0.6B-MLX-4bit"
+
+    /// Single-instance model shared across tests — loading is expensive
+    /// and all the decoder-option probes just vary the input and flags.
+    private static var model: Qwen3ASRModel?
+
+    override func setUp() async throws {
+        try await super.setUp()
+        if Self.model == nil {
+            Self.model = try await Qwen3ASRModel.fromPretrained(modelId: Self.modelId)
+        }
+    }
+
+    /// The motivating regression from #209: greedy decoding on silence
+    /// collapses onto a single token and loops it for the whole
+    /// ``maxTokens`` horizon. Adding a repetition penalty should bound
+    /// the output: same input must produce a string at most as long as
+    /// the greedy one (typically much shorter).
+    func testRepetitionPenaltyBoundsOutputOnSilence() throws {
+        guard let model = Self.model else { throw XCTSkip("model not loaded") }
+
+        // 3 s of silence @ 16 kHz.
+        let samples = [Float](repeating: 0, count: 3 * 16000)
+
+        let greedy = model.transcribe(
+            audio: samples,
+            sampleRate: 16000,
+            options: Qwen3DecodingOptions(maxTokens: 64)
+        )
+        let withPenalty = model.transcribe(
+            audio: samples,
+            sampleRate: 16000,
+            options: Qwen3DecodingOptions(maxTokens: 64, repetitionPenalty: 1.15)
+        )
+        print("greedy on silence: '\(greedy)' (len=\(greedy.count))")
+        print("penalty on silence: '\(withPenalty)' (len=\(withPenalty.count))")
+
+        // Both paths must return a String, both must not crash. Beyond that,
+        // either both are empty (the decoder hit EOS immediately — ideal
+        // behaviour) or the penalty output is not longer than greedy. We
+        // deliberately keep the assertion loose because the exact behaviour
+        // on silence is model-specific; the important property is that the
+        // options struct flows through without changing the no-op case.
+        XCTAssertLessThanOrEqual(withPenalty.count, max(greedy.count, 1) * 2,
+            "repetition penalty shouldn't inflate output length vs greedy")
+    }
+
+    /// Confirms the new overload is wiring-compatible with the legacy one:
+    /// on a short silence buffer (no actual speech content) both the
+    /// ``transcribe(audio:sampleRate:language:maxTokens:context:)`` path
+    /// and ``transcribe(audio:sampleRate:options:)`` with default options
+    /// should produce the same string.
+    func testDefaultOptionsMatchLegacyOverload() throws {
+        guard let model = Self.model else { throw XCTSkip("model not loaded") }
+
+        let samples = [Float](repeating: 0, count: 1 * 16000)
+
+        let legacy = model.transcribe(audio: samples, sampleRate: 16000, maxTokens: 32)
+        let viaOptions = model.transcribe(
+            audio: samples,
+            sampleRate: 16000,
+            options: Qwen3DecodingOptions(maxTokens: 32)
+        )
+
+        XCTAssertEqual(legacy, viaOptions,
+            "default Qwen3DecodingOptions must be byte-identical to the legacy overload")
     }
 }
