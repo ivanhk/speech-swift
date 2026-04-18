@@ -65,7 +65,11 @@ public final class KaldiFbank {
     private let fftSetup: FFTSetup
     private let poveyWindow: [Float]
     private let melFilterbank: [Float]     // [numMelBins, numBins] row-major
-    private let logFloor: Float = .leastNormalMagnitude  // matches kaldi FLT_EPSILON floor
+    // kaldi-native-fbank floors pre-log energies at ``FLT_EPSILON`` (~1.19e-7),
+    // which clamps silence mel bins to ~-15.94. Our earlier floor at
+    // ``leastNormalMagnitude`` (~1.18e-38 → log = -87.3) blew up the encoder's
+    // fp16 compute path on low-energy frames.
+    private let logFloor: Float = .ulpOfOne
 
     public init(_ options: Options = Options()) {
         self.options = options

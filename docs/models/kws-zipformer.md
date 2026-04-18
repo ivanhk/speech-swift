@@ -5,6 +5,10 @@ Zipformer2 encoder + stateless RNN-T transducer. CoreML export with INT8
 palettization fits in under 4 MB of compiled weights and hits ~26× real-time
 on CPU + Neural Engine.
 
+> **English only.** The checkpoint is the gigaspeech KWS fine-tune. No
+> multilingual variant is currently exported; keywords and test audio must
+> be English. Other languages require a separate fine-tune + re-export.
+
 - **Source**: `pkufool/keyword-spotting-models@v0.11/icefall-kws-zipformer-gigaspeech-20240219`
 - **License**: Apache-2.0
 - **Language**: English only (gigaspeech fine-tune)

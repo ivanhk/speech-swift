@@ -4,6 +4,10 @@ The `SpeechWakeWord` module runs the KWS Zipformer (see
 [model docs](../models/kws-zipformer.md)) as a streaming keyword spotter.
 Registered keywords are boosted and thresholded; anything else is suppressed.
 
+> **English only.** The shipped checkpoint is fine-tuned on gigaspeech.
+> For non-English keywords you'll need to re-export a matching checkpoint
+> from the upstream icefall recipe and host it on HuggingFace.
+
 ## Swift API
 
 ```swift
@@ -111,5 +115,16 @@ and iterate.
 - English only — gigaspeech fine-tune, no multilingual variant exported.
 - Single-stream decoder — multiple concurrent streams need independent
   `WakeWordSession` instances (models themselves are shareable).
-- Greedy BPE encoder — good enough for common phrases; fall back to the full
-  SentencePiece encoder in the model bundle for unusual casings or unicode.
+- Greedy BPE encoder — good enough for common phrases; pass explicit
+  `KeywordSpec(tokens:)` (SentencePiece pieces looked up in the model's
+  `tokens.txt`) to bypass tokenisation ambiguity entirely. This also lets
+  you use the hand-crafted decompositions that ship in sherpa-onnx-style
+  keyword files.
+- `pushAudio` recomputes fbank across the accumulated buffer each call.
+  Fine for batch detection and short live sessions; a stateful streaming
+  fbank that keeps only a rolling PCM tail would reduce per-chunk CPU for
+  long-running streams.
+- **Swift vs Python beam-search parity is not yet verified** — the initial
+  port's detection path diverges from the icefall reference in edge cases
+  (see the `XCTSkipIf` in `Tests/SpeechWakeWordTests/SpeechWakeWordTests.swift`).
+  Encoder + fbank parity is proven byte-close to kaldi-native-fbank.

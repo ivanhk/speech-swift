@@ -3,9 +3,9 @@
 Run from speech-swift with the kws-zipformer poetry env on PATH:
 
     cd ~/speech-models/models/kws-zipformer/export
-    poetry run python ~/speech-swift/Tests/SpeechWakeWordTests/Resources/_generate_reference.py
+    poetry run python ~/speech-swift/scripts/kws/generate_fbank_reference.py
 
-Produces two files next to this script:
+Produces two files in ``Tests/SpeechWakeWordTests/Resources/``:
 
 - ``fbank_input.wav``     — deterministic 1 s PCM @ 16 kHz (mix of sine + noise)
 - ``fbank_reference.bin`` — 100 frames × 80 mel bins, ``<f`` float32 bytes,
@@ -24,7 +24,9 @@ import numpy as np
 sys.path.insert(0, str(Path.home() / "speech-models/models/kws-zipformer/export"))
 from streaming_fbank import waveform_to_fbank, SAMPLE_RATE
 
-OUT = Path(__file__).resolve().parent
+# Write next to the SpeechWakeWordTests resources in this repo.
+OUT = Path(__file__).resolve().parents[2] / "Tests" / "SpeechWakeWordTests" / "Resources"
+OUT.mkdir(parents=True, exist_ok=True)
 
 rng = np.random.default_rng(seed=20260418)
 num_samples = SAMPLE_RATE  # exactly 1 s

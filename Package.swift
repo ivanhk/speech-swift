@@ -398,10 +398,11 @@ let package = Package(
                 "SpeechWakeWord",
                 "AudioCommon"
             ],
-            exclude: ["Resources/_generate_reference.py"],
             resources: [
                 .copy("Resources/fbank_input.wav"),
-                .copy("Resources/fbank_reference.bin")
+                .copy("Resources/fbank_reference.bin"),
+                .copy("Resources/kws_light_up.wav"),
+                .copy("Resources/kws_lovely_child.wav")
             ]
         )
     ]

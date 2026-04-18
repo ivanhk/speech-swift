@@ -39,17 +39,21 @@ public final class WakeWordSession {
 
         var states = [String: MLMultiArray]()
         for (name, shape) in zip(config.encoder.layerStateNames, config.encoder.layerStateShapes) {
-            states[name] = try MLMultiArray(
+            let array = try MLMultiArray(
                 shape: shape.map { NSNumber(value: $0) }, dataType: .float32
             )
+            memset(array.dataPointer, 0, array.count * MemoryLayout<Float>.stride)
+            states[name] = array
         }
         self.layerStates = states
-        self.cachedEmbedLeftPad = try MLMultiArray(
+        let embedPad = try MLMultiArray(
             shape: config.encoder.cachedEmbedLeftPadShape.map { NSNumber(value: $0) },
             dataType: .float32
         )
+        memset(embedPad.dataPointer, 0, embedPad.count * MemoryLayout<Float>.stride)
+        self.cachedEmbedLeftPad = embedPad
         self.processedLens = try MLMultiArray(shape: [1], dataType: .int32)
-        self.processedLens[0] = 0
+        processedLens.dataPointer.assumingMemoryBound(to: Int32.self)[0] = 0
 
         let decoderModel = decoder
         let joinerModel = joiner
@@ -84,7 +88,7 @@ public final class WakeWordSession {
         }
         memset(cachedEmbedLeftPad.dataPointer, 0,
                cachedEmbedLeftPad.count * MemoryLayout<Float>.stride)
-        processedLens[0] = 0
+        processedLens.dataPointer.assumingMemoryBound(to: Int32.self)[0] = 0
         kwsDecoder.reset()
     }
 
@@ -92,10 +96,11 @@ public final class WakeWordSession {
     public func pushAudio(_ samples: [Float]) throws -> [KeywordDetection] {
         audioBuffer.append(contentsOf: samples)
 
-        // Build full mel feature buffer each time (streaming fbank inside a
-        // single stream can be done in-place, but KaldiFbank stays stateless
-        // and we simply re-compute over the accumulated buffer). We slice the
-        // frames already consumed by the encoder to keep this bounded.
+        // TODO(perf): this recomputes fbank over the full accumulated buffer
+        // each call — fine for batch detect() but wasteful for long live
+        // streams. A stateful ``KaldiFbank.StreamingSession`` that keeps only
+        // a rolling PCM tail would cut per-chunk CPU. See the ``# Known
+        // limitations`` section in ``docs/inference/wake-word.md``.
         let allMels = fbank.compute(audioBuffer)
         let numBins = config.feature.numMelBins
         var newFrames: [[Float]] = []
@@ -114,12 +119,16 @@ public final class WakeWordSession {
 
         var emissions: [KeywordDetection] = []
         let totalIn = config.encoder.totalInputFrames  // 45
-        let chunkSize = config.encoder.chunkSize       // 16
+        // Each encoder chunk consumes ``chunkSize * 2`` fresh mel frames; the
+        // trailing 13 frames (``PAD_LENGTH`` in the Python export) overlap with
+        // the next call and are reabsorbed by the ``cached_embed_left_pad``
+        // state. Slide by ``stride``, not ``chunkSize``.
+        let stride = config.encoder.chunkSize * 2      // 32
         while melBuffer.count >= totalIn {
             let window = Array(melBuffer.prefix(totalIn))
             let encoderFrames = try runEncoder(melWindow: window)
             emissions.append(contentsOf: kwsDecoder.stepChunk(encoderFrames))
-            melBuffer.removeFirst(chunkSize)
+            melBuffer.removeFirst(stride)
         }
         return emissions
     }
@@ -185,17 +194,30 @@ public final class WakeWordSession {
     }
 
     private func decodeEncoderOutput(_ array: MLMultiArray) -> [[Float]] {
-        // encoder_out: (1, outputFrames, joinerDim)
+        // encoder_out: (1, outputFrames, joinerDim). Some CoreML backends
+        // return fp16 here even though the input spec is fp32 — handle both.
         let outputFrames = config.encoder.outputFrames
         let joinerDim = config.encoder.joinerDim
-        let ptr = array.dataPointer.assumingMemoryBound(to: Float.self)
         var frames: [[Float]] = []
         frames.reserveCapacity(outputFrames)
+
+        let count = array.count
+        let floats: [Float]
+        switch array.dataType {
+        case .float32:
+            let ptr = array.dataPointer.assumingMemoryBound(to: Float.self)
+            floats = Array(UnsafeBufferPointer(start: ptr, count: count))
+        case .float16:
+            let ptr = array.dataPointer.assumingMemoryBound(to: Float16.self)
+            var out = [Float](repeating: 0, count: count)
+            for i in 0..<count { out[i] = Float(ptr[i]) }
+            floats = out
+        default:
+            floats = []
+        }
         for f in 0..<outputFrames {
             let base = f * joinerDim
-            var row = [Float](repeating: 0, count: joinerDim)
-            for j in 0..<joinerDim { row[j] = ptr[base + j] }
-            frames.append(row)
+            frames.append(Array(floats[base..<(base + joinerDim)]))
         }
         return frames
     }
@@ -242,10 +264,10 @@ public final class WakeWordSession {
 
     private static func copyFloatsToFloat16(_ src: [Float], into array: MLMultiArray) {
         let count = min(src.count, array.count)
-        let floats = array.dataPointer.assumingMemoryBound(to: UInt16.self)
+        let halves = array.dataPointer.assumingMemoryBound(to: Float16.self)
         src.withUnsafeBufferPointer { buf in
             for i in 0..<count {
-                floats[i] = floatToHalf(buf[i])
+                halves[i] = Float16(buf[i])
             }
         }
     }
@@ -257,55 +279,14 @@ public final class WakeWordSession {
             let ptr = array.dataPointer.assumingMemoryBound(to: Float.self)
             return Array(UnsafeBufferPointer(start: ptr, count: count))
         case .float16:
-            let ptr = array.dataPointer.assumingMemoryBound(to: UInt16.self)
+            let ptr = array.dataPointer.assumingMemoryBound(to: Float16.self)
             var out = [Float](repeating: 0, count: count)
-            for i in 0..<count { out[i] = halfToFloat(ptr[i]) }
+            for i in 0..<count { out[i] = Float(ptr[i]) }
             return out
         default:
             return []
         }
     }
 
-    // Minimal IEEE 754 half <-> single conversion (matching `__fp16`). CoreML
-    // expects fp16 inputs on the joiner; we don't take a hard dependency on
-    // `_Float16` to keep the module buildable on older Xcodes.
-    private static func floatToHalf(_ f: Float) -> UInt16 {
-        let bits = f.bitPattern
-        let sign = UInt16((bits >> 16) & 0x8000)
-        var exp = Int((bits >> 23) & 0xFF) - 127 + 15
-        var mant = UInt32(bits & 0x007FFFFF)
-        if exp <= 0 {
-            if exp < -10 { return sign }
-            mant = (mant | 0x00800000) >> UInt32(1 - exp)
-            if (mant & 0x00001000) != 0 { mant += 0x00002000 }
-            return sign | UInt16(mant >> 13)
-        }
-        if exp >= 31 { return sign | 0x7C00 }
-        if (mant & 0x00001000) != 0 {
-            mant += 0x00002000
-            if (mant & 0x00800000) != 0 { mant = 0; exp += 1 }
-        }
-        if exp >= 31 { return sign | 0x7C00 }
-        return sign | UInt16(exp << 10) | UInt16(mant >> 13)
-    }
-
-    private static func halfToFloat(_ h: UInt16) -> Float {
-        let sign = UInt32(h & 0x8000) << 16
-        let exp = UInt32(h & 0x7C00) >> 10
-        let mant = UInt32(h & 0x03FF)
-        if exp == 0 {
-            if mant == 0 { return Float(bitPattern: sign) }
-            var m = mant
-            var e: Int32 = 1
-            while (m & 0x0400) == 0 { m <<= 1; e -= 1 }
-            m &= 0x03FF
-            let bits = sign | UInt32(Int32(127 - 15) + e) << 23 | (m << 13)
-            return Float(bitPattern: bits)
-        }
-        if exp == 31 {
-            return Float(bitPattern: sign | 0x7F800000 | (mant << 13))
-        }
-        let bits = sign | UInt32(Int32(exp) - 15 + 127) << 23 | (mant << 13)
-        return Float(bitPattern: bits)
-    }
+    fileprivate static func halfToFloat(_ h: Float16) -> Float { Float(h) }
 }

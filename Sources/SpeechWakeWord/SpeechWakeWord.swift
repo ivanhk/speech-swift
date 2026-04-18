@@ -154,7 +154,8 @@ public final class WakeWordDetector {
         ))
 
         let graph = try buildContextGraph(
-            keywords: keywords, tokenizer: tokenizer, defaults: config.kws
+            keywords: keywords, tokenizer: tokenizer,
+            vocabulary: vocab, defaults: config.kws
         )
 
         progressHandler?(1.0, "Model loaded")
@@ -180,7 +181,8 @@ public final class WakeWordDetector {
             throw AudioModelError.inferenceFailed(operation: "rebuildContextGraph", reason: "Model not loaded")
         }
         let graph = try Self.buildContextGraph(
-            keywords: keywords, tokenizer: bpeTokenizer, defaults: config.kws
+            keywords: keywords, tokenizer: bpeTokenizer,
+            vocabulary: vocabulary, defaults: config.kws
         )
         return WakeWordDetector(
             config: config,
@@ -200,6 +202,7 @@ public final class WakeWordDetector {
     private static func buildContextGraph(
         keywords: [KeywordSpec],
         tokenizer: BPETokenizer,
+        vocabulary: KWSVocabulary,
         defaults: KWSZipformerConfig.KWSDefaults
     ) throws -> ContextGraph {
         guard !keywords.isEmpty else {
@@ -217,7 +220,21 @@ public final class WakeWordDetector {
         var boosts: [Double] = []
         var thresholds: [Double] = []
         for kw in keywords {
-            tokenIds.append(tokenizer.encode(kw.phrase))
+            let ids: [Int]
+            if let pieces = kw.tokens {
+                ids = try pieces.map { piece -> Int in
+                    guard let id = vocabulary.tokenToId[piece] else {
+                        throw AudioModelError.invalidConfiguration(
+                            model: "KWS-Zipformer",
+                            reason: "Unknown BPE piece '\(piece)' in keyword '\(kw.phrase)'"
+                        )
+                    }
+                    return id
+                }
+            } else {
+                ids = tokenizer.encode(kw.phrase)
+            }
+            tokenIds.append(ids)
             phrases.append(kw.phrase)
             boosts.append(kw.boost)
             thresholds.append(kw.acThreshold)

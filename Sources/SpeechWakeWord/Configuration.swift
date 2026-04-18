@@ -105,10 +105,23 @@ public struct KeywordSpec: Sendable, Equatable {
     /// Per-phrase boost score (0 → use config default). Positive values make
     /// the phrase easier to trigger; negative discourage it.
     public let boost: Double
+    /// Optional explicit BPE piece sequence. When non-nil the detector uses
+    /// these pieces directly (looked up by text in the model's ``tokens.txt``)
+    /// instead of running the greedy BPE encoder over ``phrase``. Use this
+    /// when you know the exact decomposition the model was trained on —
+    /// sherpa-onnx keyword files ship in this format
+    /// (``▁ L IGHT ▁UP`` for "light up", not ``▁LI GHT ▁UP``).
+    public let tokens: [String]?
 
-    public init(phrase: String, acThreshold: Double = 0.0, boost: Double = 0.0) {
+    public init(
+        phrase: String,
+        acThreshold: Double = 0.0,
+        boost: Double = 0.0,
+        tokens: [String]? = nil
+    ) {
         self.phrase = phrase
         self.acThreshold = acThreshold
         self.boost = boost
+        self.tokens = tokens
     }
 }
