@@ -165,8 +165,10 @@ import AudioCommon          // 공유 프로토콜 및 유틸리티
 
 ### 요구사항
 
-- Swift 5.9+, Xcode 15+ (Metal Toolchain 포함)
-- macOS 14+ 또는 iOS 17+, Apple Silicon (M1/M2/M3/M4)
+- Swift 6+, Xcode 16+ (Metal Toolchain 포함)
+- macOS 15+ (Sequoia) 또는 iOS 18+, Apple Silicon (M1/M2/M3/M4)
+
+macOS 15 / iOS 18 최소 요구사항은 [MLState](https://developer.apple.com/documentation/coreml/mlstate) —— Apple의 영속적 ANE 상태 API —— 에서 비롯됩니다. CoreML 파이프라인(Qwen3-ASR, Qwen3-Chat, Qwen3-TTS)은 MLState를 사용해 KV 캐시를 토큰 스텝 간 Neural Engine에 상주시킵니다.
 
 ### 소스 빌드
 

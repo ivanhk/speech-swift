@@ -165,8 +165,10 @@ import AudioCommon          // 共享协议与工具
 
 ### 环境要求
 
-- Swift 5.9+、Xcode 15+（含 Metal Toolchain）
-- macOS 14+ 或 iOS 17+、Apple Silicon（M1/M2/M3/M4）
+- Swift 6+、Xcode 16+（含 Metal Toolchain）
+- macOS 15+（Sequoia）或 iOS 18+、Apple Silicon（M1/M2/M3/M4）
+
+macOS 15 / iOS 18 的最低要求来自 [MLState](https://developer.apple.com/documentation/coreml/mlstate) —— Apple 的持久化 ANE 状态 API，CoreML 管线（Qwen3-ASR、Qwen3-Chat、Qwen3-TTS）使用它让 KV 缓存常驻 Neural Engine，跨 token 步骤复用。
 
 ### 从源代码构建
 

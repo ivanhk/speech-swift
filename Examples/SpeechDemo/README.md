@@ -4,9 +4,9 @@ A minimal SwiftUI macOS app demonstrating the Qwen3 Speech library: mic recordin
 
 ## Requirements
 
-- macOS 14+
+- macOS 15+ (Sequoia)
 - Apple Silicon (M1 or later)
-- Xcode 15+
+- Xcode 16+
 
 ## Build & Run
 

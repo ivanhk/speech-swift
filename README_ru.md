@@ -165,8 +165,10 @@ import AudioCommon          // Общие протоколы и утилиты
 
 ### Требования
 
-- Swift 5.9+, Xcode 15+ (с Metal Toolchain)
-- macOS 14+ или iOS 17+, Apple Silicon (M1/M2/M3/M4)
+- Swift 6+, Xcode 16+ (с Metal Toolchain)
+- macOS 15+ (Sequoia) или iOS 18+, Apple Silicon (M1/M2/M3/M4)
+
+Минимум macOS 15 / iOS 18 следует из [MLState](https://developer.apple.com/documentation/coreml/mlstate) —— API Apple для персистентного состояния на ANE —— которое CoreML-пайплайны (Qwen3-ASR, Qwen3-Chat, Qwen3-TTS) используют, чтобы держать KV-кэши на Neural Engine между шагами токенов.
 
 ### Сборка из исходников
 

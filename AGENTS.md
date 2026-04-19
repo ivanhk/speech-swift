@@ -79,7 +79,7 @@ Project skills in `.claude/skills/`:
 
 ## Key Conventions
 
-- Swift 6, macOS 14+, Apple Silicon (M-series)
+- Swift 6, macOS 15+ / iOS 18+, Apple Silicon (M-series)
 - MLX for GPU inference (Metal), CoreML for Neural Engine (DeepFilterNet3, Kokoro, Qwen3-TTS, Silero VAD optional)
 - Models are downloaded from HuggingFace on first use, cached in `~/Library/Caches/qwen3-speech/`
 - All audio processing uses Float32 PCM, resampled to model-specific rates internally
