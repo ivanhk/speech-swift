@@ -28,6 +28,7 @@ Articles : [Qwen3-ASR](https://arxiv.org/abs/2601.21337) (Alibaba) · [Qwen3-TTS
 
 ## Actualites
 
+- **19 avr. 2026** -- [MLX vs CoreML sur Apple Silicon -- guide pratique pour choisir le bon backend](https://blog.ivan.digital/mlx-vs-coreml-on-apple-silicon-a-practical-guide-to-picking-the-right-backend-and-why-you-should-f77ddea7b27a)
 - **20 mars 2026** -- [Nous battons Whisper Large v3 avec un modele de 600M tournant entierement sur votre Mac](https://blog.ivan.digital/we-beat-whisper-large-v3-with-a-600m-model-running-entirely-on-your-mac-20e6ce191174)
 - **26 fev. 2026** -- [Diarisation de locuteurs et detection d'activite vocale sur Apple Silicon -- Swift natif avec MLX](https://blog.ivan.digital/speaker-diarization-and-voice-activity-detection-on-apple-silicon-native-swift-with-mlx-92ea0c9aca0f)
 - **23 fev. 2026** -- [NVIDIA PersonaPlex 7B sur Apple Silicon -- parole-a-parole full-duplex en Swift natif avec MLX](https://blog.ivan.digital/nvidia-personaplex-7b-on-apple-silicon-full-duplex-speech-to-speech-in-native-swift-with-mlx-0aa5276f2e23)
@@ -38,7 +39,7 @@ Articles : [Qwen3-ASR](https://arxiv.org/abs/2601.21337) (Alibaba) · [Qwen3-TTS
 Ajoutez le package a votre `Package.swift` :
 
 ```swift
-.package(url: "https://github.com/soniqo/speech-swift", from: "0.0.9")
+.package(url: "https://github.com/soniqo/speech-swift", branch: "main")
 ```
 
 N'importez que les modules dont vous avez besoin -- chaque modele est une bibliotheque SPM independante, vous ne payez donc pas pour ce que vous n'utilisez pas :
@@ -141,7 +142,7 @@ audio-server --port 8080            # serveur HTTP / WebSocket local (OpenAI-com
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/soniqo/speech-swift", from: "0.0.9")
+    .package(url: "https://github.com/soniqo/speech-swift", branch: "main")
 ]
 ```
 

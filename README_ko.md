@@ -28,6 +28,7 @@ Mac과 iOS를 위한 온디바이스 음성 인식, 합성 및 이해. Apple Sil
 
 ## 소식
 
+- **2026년 4월 19일** — [Apple Silicon에서의 MLX와 CoreML — 올바른 백엔드 선택을 위한 실용 가이드](https://blog.ivan.digital/mlx-vs-coreml-on-apple-silicon-a-practical-guide-to-picking-the-right-backend-and-why-you-should-f77ddea7b27a)
 - **2026년 3월 20일** — [600M 모델로 Mac에서 Whisper Large v3를 능가하다](https://blog.ivan.digital/we-beat-whisper-large-v3-with-a-600m-model-running-entirely-on-your-mac-20e6ce191174)
 - **2026년 2월 26일** — [Apple Silicon에서의 화자 분리 및 음성 활동 감지 — MLX 기반 네이티브 Swift](https://blog.ivan.digital/speaker-diarization-and-voice-activity-detection-on-apple-silicon-native-swift-with-mlx-92ea0c9aca0f)
 - **2026년 2월 23일** — [Apple Silicon에서 NVIDIA PersonaPlex 7B — MLX 기반 네이티브 Swift로 전이중 음성-음성 변환](https://blog.ivan.digital/nvidia-personaplex-7b-on-apple-silicon-full-duplex-speech-to-speech-in-native-swift-with-mlx-0aa5276f2e23)
@@ -38,7 +39,7 @@ Mac과 iOS를 위한 온디바이스 음성 인식, 합성 및 이해. Apple Sil
 `Package.swift`에 패키지를 추가하세요:
 
 ```swift
-.package(url: "https://github.com/soniqo/speech-swift", from: "0.0.9")
+.package(url: "https://github.com/soniqo/speech-swift", branch: "main")
 ```
 
 필요한 모듈만 임포트하세요 — 모든 모델이 독립된 SPM 라이브러리이므로 사용하지 않는 것에 비용을 지불할 필요가 없습니다:
@@ -141,7 +142,7 @@ audio-server --port 8080            # 로컬 HTTP / WebSocket 서버 (OpenAI 호
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/soniqo/speech-swift", from: "0.0.9")
+    .package(url: "https://github.com/soniqo/speech-swift", branch: "main")
 ]
 ```
 

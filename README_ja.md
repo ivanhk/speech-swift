@@ -28,6 +28,7 @@ Mac・iOS向けのオンデバイス音声認識・合成・理解。Apple Silic
 
 ## ニュース
 
+- **2026年4月19日** — [Apple SiliconにおけるMLXとCoreML — 正しいバックエンドを選ぶための実践ガイド](https://blog.ivan.digital/mlx-vs-coreml-on-apple-silicon-a-practical-guide-to-picking-the-right-backend-and-why-you-should-f77ddea7b27a)
 - **2026年3月20日** — [600MモデルだけでMac上でWhisper Large v3を超えた](https://blog.ivan.digital/we-beat-whisper-large-v3-with-a-600m-model-running-entirely-on-your-mac-20e6ce191174)
 - **2026年2月26日** — [Apple Silicon上の話者ダイアライゼーションと音声区間検出 — ネイティブSwift + MLX](https://blog.ivan.digital/speaker-diarization-and-voice-activity-detection-on-apple-silicon-native-swift-with-mlx-92ea0c9aca0f)
 - **2026年2月23日** — [Apple Silicon上のNVIDIA PersonaPlex 7B — ネイティブSwift + MLXによる全二重音声間変換](https://blog.ivan.digital/nvidia-personaplex-7b-on-apple-silicon-full-duplex-speech-to-speech-in-native-swift-with-mlx-0aa5276f2e23)
@@ -38,7 +39,7 @@ Mac・iOS向けのオンデバイス音声認識・合成・理解。Apple Silic
 `Package.swift` にパッケージを追加します：
 
 ```swift
-.package(url: "https://github.com/soniqo/speech-swift", from: "0.0.9")
+.package(url: "https://github.com/soniqo/speech-swift", branch: "main")
 ```
 
 必要なモジュールだけをインポートします。各モデルは個別のSPMライブラリなので、使わないものにコストを払う必要はありません：
@@ -141,7 +142,7 @@ audio-server --port 8080            # ローカル HTTP / WebSocket サーバー
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/soniqo/speech-swift", from: "0.0.9")
+    .package(url: "https://github.com/soniqo/speech-swift", branch: "main")
 ]
 ```
 

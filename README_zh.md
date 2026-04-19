@@ -28,6 +28,7 @@
 
 ## 动态
 
+- **2026 年 4 月 19 日** — [Apple Silicon 上的 MLX 与 CoreML — 如何选择合适的推理后端](https://blog.ivan.digital/mlx-vs-coreml-on-apple-silicon-a-practical-guide-to-picking-the-right-backend-and-why-you-should-f77ddea7b27a)
 - **2026 年 3 月 20 日** — [我们用一个 600M 模型在 Mac 上击败了 Whisper Large v3](https://blog.ivan.digital/we-beat-whisper-large-v3-with-a-600m-model-running-entirely-on-your-mac-20e6ce191174)
 - **2026 年 2 月 26 日** — [Apple Silicon 上的说话人分离与语音活动检测——基于 MLX 的原生 Swift 实现](https://blog.ivan.digital/speaker-diarization-and-voice-activity-detection-on-apple-silicon-native-swift-with-mlx-92ea0c9aca0f)
 - **2026 年 2 月 23 日** — [NVIDIA PersonaPlex 7B 在 Apple Silicon 上运行——基于 MLX 的原生 Swift 全双工语音到语音](https://blog.ivan.digital/nvidia-personaplex-7b-on-apple-silicon-full-duplex-speech-to-speech-in-native-swift-with-mlx-0aa5276f2e23)
@@ -38,7 +39,7 @@
 将依赖添加到你的 `Package.swift`：
 
 ```swift
-.package(url: "https://github.com/soniqo/speech-swift", from: "0.0.9")
+.package(url: "https://github.com/soniqo/speech-swift", branch: "main")
 ```
 
 只引入你需要的模块——每个模型都是独立的 SPM 库，不用为你不使用的东西买单：
@@ -141,7 +142,7 @@ audio-server --port 8080            # 本地 HTTP / WebSocket 服务器（OpenAI
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/soniqo/speech-swift", from: "0.0.9")
+    .package(url: "https://github.com/soniqo/speech-swift", branch: "main")
 ]
 ```
 
