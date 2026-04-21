@@ -165,43 +165,43 @@ public struct TranscribeBatchCommand: ParsableCommand {
             var totalAudio = 0.0
 
             for (idx, fileURL) in files.enumerated() {
-                try autoreleasepool {
-                let name = fileURL.deletingPathExtension().lastPathComponent
-                let pct = Double(idx + 1) / Double(files.count) * 100
+                autoreleasepool {
+                    let name = fileURL.deletingPathExtension().lastPathComponent
+                    let pct = Double(idx + 1) / Double(files.count) * 100
 
-                do {
-                    let audio = try AudioFileLoader.load(
-                        url: fileURL, targetSampleRate: 16000)
-                    let duration = Double(audio.count) / 16000.0
+                    do {
+                        let audio = try AudioFileLoader.load(
+                            url: fileURL, targetSampleRate: 16000)
+                        let duration = Double(audio.count) / 16000.0
 
-                    let t0 = CFAbsoluteTimeGetCurrent()
-                    let result = try parakeet.transcribeAudio(
-                        audio, sampleRate: 16000, language: language)
-                    let elapsed = CFAbsoluteTimeGetCurrent() - t0
-                    let rtf = elapsed / max(duration, 0.001)
+                        let t0 = CFAbsoluteTimeGetCurrent()
+                        let result = try parakeet.transcribeAudio(
+                            audio, sampleRate: 16000, language: language)
+                        let elapsed = CFAbsoluteTimeGetCurrent() - t0
+                        let rtf = elapsed / max(duration, 0.001)
 
-                    totalInference += elapsed
-                    totalAudio += duration
+                        totalInference += elapsed
+                        totalAudio += duration
 
-                    if jsonl {
-                        let escaped = result
-                            .replacingOccurrences(of: "\\", with: "\\\\")
-                            .replacingOccurrences(of: "\"", with: "\\\"")
-                        print("{\"file\":\"\(name)\",\"text\":\"\(escaped)\","
-                            + String(format: "\"time\":%.3f,\"rtf\":%.4f,\"duration\":%.2f}",
-                                     elapsed, rtf, duration))
-                    } else {
-                        print(String(format: "  [%d/%d] (%.0f%%) %@: %@  (%.2fs, RTF=%.3f)",
-                                     idx + 1, files.count, pct, name, result, elapsed, rtf))
+                        if jsonl {
+                            let escaped = result
+                                .replacingOccurrences(of: "\\", with: "\\\\")
+                                .replacingOccurrences(of: "\"", with: "\\\"")
+                            print("{\"file\":\"\(name)\",\"text\":\"\(escaped)\","
+                                + String(format: "\"time\":%.3f,\"rtf\":%.4f,\"duration\":%.2f}",
+                                         elapsed, rtf, duration))
+                        } else {
+                            print(String(format: "  [%d/%d] (%.0f%%) %@: %@  (%.2fs, RTF=%.3f)",
+                                         idx + 1, files.count, pct, name, result, elapsed, rtf))
+                        }
+
+                        if let outDir = outDir {
+                            let outFile = outDir.appendingPathComponent("\(name).txt")
+                            try result.write(to: outFile, atomically: true, encoding: .utf8)
+                        }
+                    } catch {
+                        print("  [\(idx + 1)/\(files.count)] \(name): ERROR - \(error)")
                     }
-
-                    if let outDir = outDir {
-                        let outFile = outDir.appendingPathComponent("\(name).txt")
-                        try result.write(to: outFile, atomically: true, encoding: .utf8)
-                    }
-                } catch {
-                    print("  [\(idx + 1)/\(files.count)] \(name): ERROR - \(error)")
-                }
                 } // autoreleasepool
             }
 

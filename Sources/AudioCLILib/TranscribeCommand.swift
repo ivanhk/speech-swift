@@ -216,7 +216,7 @@ public struct TranscribeCommand: ParsableCommand {
                 print("Transcribing (full CoreML: encoder + decoder)...")
                 let startTime = CFAbsoluteTimeGetCurrent()
                 let result = try asrModel.transcribe(
-                    audio: audio, sampleRate: 16000, language: language)
+                    audio: audio, sampleRate: 16000, language: language, maxTokens: 448)
                 let elapsed = CFAbsoluteTimeGetCurrent() - startTime
                 let rtf = elapsed / Double(duration)
 

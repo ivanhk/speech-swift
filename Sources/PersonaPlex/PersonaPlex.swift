@@ -969,8 +969,6 @@ public final class PersonaPlexModel: Module {
                     }
 
                     continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
                 }
             }
         }

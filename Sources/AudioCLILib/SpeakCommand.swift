@@ -377,7 +377,9 @@ public struct SpeakCommand: ParsableCommand {
             if self.play {
                 let player = try AVAudioPlayer(contentsOf: outputURL)
                 player.play()
-                while player.isPlaying { Thread.sleep(forTimeInterval: 0.1) }
+                while player.isPlaying {
+                    try await Task.sleep(nanoseconds: 100_000_000)
+                }
             }
 
             model.unload()

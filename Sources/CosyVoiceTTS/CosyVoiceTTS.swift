@@ -248,19 +248,15 @@ public final class CosyVoiceTTSModel {
                     continuation.finish()
                     return
                 }
-                do {
-                    let samples = self.synthesize(text: text, language: language)
-                    let chunk = AudioChunk(
-                        samples: samples,
-                        sampleRate: rate,
-                        frameIndex: 0,
-                        isFinal: true
-                    )
-                    continuation.yield(chunk)
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
+                let samples = self.synthesize(text: text, language: language)
+                let chunk = AudioChunk(
+                    samples: samples,
+                    sampleRate: rate,
+                    frameIndex: 0,
+                    isFinal: true
+                )
+                continuation.yield(chunk)
+                continuation.finish()
             }
             continuation.onTermination = { @Sendable _ in task.cancel() }
         }
