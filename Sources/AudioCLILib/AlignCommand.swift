@@ -6,7 +6,7 @@ import AudioCommon
 public struct AlignCommand: ParsableCommand {
     public static let configuration = CommandConfiguration(
         commandName: "align",
-        abstract: "Forced alignment: align text to audio with word-level timestamps"
+        abstract: "Forced alignment: align text to audio with timestamps"
     )
 
     @Argument(help: "Audio file (WAV, any sample rate)")
@@ -24,7 +24,32 @@ public struct AlignCommand: ParsableCommand {
     @Option(name: .long, help: "Language hint (optional)")
     public var language: String?
 
+    @Flag(name: .long, help: "For Chinese/Han text, align at character granularity")
+    public var charLevel: Bool = false
+
+    @Flag(name: .long, help: "For Chinese/Han text, align at word granularity")
+    public var wordLevel: Bool = false
+
     public init() {}
+
+    var normalizedLanguage: String? {
+        guard let language else { return nil }
+        let trimmed = language.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.caseInsensitiveCompare("auto") == .orderedSame ? nil : trimmed
+    }
+
+    var requestedGranularity: ForcedAlignmentGranularity {
+        if wordLevel { return .word }
+        if charLevel { return .char }
+        return .automatic
+    }
+
+    public func validate() throws {
+        if charLevel && wordLevel {
+            throw ValidationError("--char-level and --word-level are mutually exclusive")
+        }
+    }
 
     public func run() throws {
         try runAsync {
@@ -34,6 +59,8 @@ public struct AlignCommand: ParsableCommand {
             print("  Loaded \(audio.count) samples (\(formatDuration(audio.count))s)")
 
             var textToAlign = text
+            let language = normalizedLanguage
+            let granularity = requestedGranularity
 
             // If no text provided, transcribe first
             if textToAlign == nil {
@@ -61,7 +88,13 @@ public struct AlignCommand: ParsableCommand {
 
             print("Aligning...")
             let start = Date()
-            let aligned = aligner.align(audio: audio, text: alignText, sampleRate: 24000)
+            let aligned = aligner.align(
+                audio: audio,
+                text: alignText,
+                sampleRate: 24000,
+                language: language,
+                granularity: granularity
+            )
             let elapsed = Date().timeIntervalSince(start)
 
             for word in aligned {

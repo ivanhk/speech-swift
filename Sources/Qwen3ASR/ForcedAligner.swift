@@ -80,19 +80,21 @@ public class Qwen3ForcedAligner {
         self.config = cfg
     }
 
-    /// Align text to audio, producing word-level timestamps.
+    /// Align text to audio, producing timestamps for each text unit.
     ///
     /// - Parameters:
     ///   - audio: Raw audio samples (mono)
     ///   - text: Text to align against the audio
     ///   - sampleRate: Sample rate of the audio (default 16000)
-    ///   - language: Language hint for word splitting (default "English")
-    /// - Returns: Array of words with start/end timestamps in seconds
+    ///   - language: Optional language hint for text splitting. Nil = auto.
+    ///   - granularity: Requested segmentation granularity for Chinese/Han text.
+    /// - Returns: Array of aligned text units with start/end timestamps in seconds
     public func align(
         audio: [Float],
         text: String,
         sampleRate: Int = 16000,
-        language: String = "English"
+        language: String?,
+        granularity: ForcedAlignmentGranularity = .automatic
     ) -> [AlignedWord] {
         guard let tokenizer = tokenizer else {
             print("Error: tokenizer not loaded")
@@ -111,7 +113,8 @@ public class Qwen3ForcedAligner {
         let slotted = TextPreprocessor.prepareForAlignment(
             text: text,
             tokenizer: tokenizer,
-            language: language
+            language: language,
+            granularity: granularity
         )
 
         guard !slotted.words.isEmpty else {
@@ -186,6 +189,19 @@ public class Qwen3ForcedAligner {
         return alignedWords
     }
 
+    /// Align text to audio, producing word-level timestamps.
+    ///
+    /// Preserves the legacy API where `language` defaults to `"English"`.
+    /// New code should prefer the `language: String?` overload.
+    public func align(
+        audio: [Float],
+        text: String,
+        sampleRate: Int = 16000,
+        language: String = "English"
+    ) -> [AlignedWord] {
+        align(audio: audio, text: text, sampleRate: sampleRate, language: Optional(language), granularity: .automatic)
+    }
+
     // MARK: - Private Helpers
 
     /// Build full input_ids sequence with chat template
@@ -193,7 +209,7 @@ public class Qwen3ForcedAligner {
         slottedTokenIds: [Int],
         numAudioTokens: Int,
         tokenizer: Qwen3Tokenizer,
-        language: String
+        language: String?
     ) -> [Int] {
         let imStartId = Qwen3ASRTokens.imStartTokenId
         let imEndId = Qwen3ASRTokens.imEndTokenId

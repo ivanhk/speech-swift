@@ -2,7 +2,7 @@
 
 ## Overview
 
-Qwen3-ForcedAligner predicts word-level timestamps for audio+text pairs. It shares the same encoder-decoder architecture as Qwen3-ASR but replaces the vocabulary lm_head with a 5000-class timestamp classification head. Inference is non-autoregressive (single forward pass through the decoder).
+Qwen3-ForcedAligner predicts timestamps for audio+text pairs. It shares the same encoder-decoder architecture as Qwen3-ASR but replaces the vocabulary lm_head with a 5000-class timestamp classification head. Inference is non-autoregressive (single forward pass through the decoder).
 
 ```
 Audio (16kHz) + Text
@@ -63,22 +63,42 @@ Same as ASR: mel spectrogram → chunked Conv2D → transformer → projector.
 
 ### 2. Text Preprocessing (TextPreprocessing.swift)
 
-Text is split into words (language-specific) and `<timestamp>` tokens inserted:
+Text is split into alignment units (language-specific) and `<timestamp>` tokens inserted:
 
 **English:** Split on whitespace
 ```
 "Can you guarantee" → ["Can", "you", "guarantee"]
 ```
 
-**CJK:** Character-level splitting
+**Chinese / Han text, default:** Character-level splitting
 ```
 "你好世界" → ["你", "好", "世", "界"]
 ```
 
-Each word gets `<timestamp>` pairs:
+**Chinese / Han text, `--word-level`:** Word segmentation via `CFStringTokenizer`
+```
+"你好世界" → ["你好", "世界"]
+```
+
+Each alignment unit gets `<timestamp>` pairs:
 ```
 <ts>Can<ts> <ts>you<ts> <ts>guarantee<ts>
 ```
+
+### Chinese Granularity Controls
+
+`audio align` keeps Chinese-compatible defaults:
+
+- Default Chinese/Han behavior is `char-level`
+- `--word-level` opts into tokenizer-based Chinese word segmentation
+- `--char-level` is available for explicitness and for scripts that mix Latin and Han text
+- These flags only affect Chinese/Han text; whitespace-delimited languages keep the existing behavior
+
+Language handling:
+
+- `--language zh` / `--language chinese` forces Chinese segmentation rules
+- `--language auto` is treated the same as omitting `--language` entirely
+- With no language hint, the aligner auto-detects Han text heuristically and still defaults to `char-level`
 
 ### 3. Single Forward Pass
 
@@ -147,6 +167,15 @@ audio align audio.wav --text "Can you guarantee that the replacement part will b
 
 # Transcribe first, then align
 audio align audio.wav
+
+# Chinese defaults to character-level alignment
+audio align zh.wav --text "一九零八年的春天" --language zh
+
+# Chinese word-level alignment
+audio align zh.wav --text "一九零八年的春天" --language zh --word-level
+
+# Explicit auto language (same as omitting --language)
+audio align zh.wav --language auto --word-level
 
 # Custom aligner model (8-bit or bf16)
 audio align audio.wav --aligner-model aufklarer/Qwen3-ForcedAligner-0.6B-8bit

@@ -15,13 +15,39 @@ final class ForcedAlignerTests: XCTestCase {
         XCTAssertEqual(words, ["Hello", "world", "test"])
     }
 
-    func testTextPreprocessingCJK() {
+    func testTextPreprocessingChineseDefaultsToCharLevel() {
         let words = TextPreprocessor.splitIntoWords("你好世界", language: "Chinese")
         XCTAssertEqual(words.count, 4)
         XCTAssertEqual(words[0], "你")
         XCTAssertEqual(words[1], "好")
         XCTAssertEqual(words[2], "世")
         XCTAssertEqual(words[3], "界")
+    }
+
+    func testTextPreprocessingChineseWordLevel() {
+        let words = TextPreprocessor.splitIntoWords(
+            "你好世界",
+            language: "zh",
+            granularity: .word
+        )
+        XCTAssertEqual(words, ["你好", "世界"])
+    }
+
+    func testTextPreprocessingMixedChineseCharLevelPreservesLatinRuns() {
+        let words = TextPreprocessor.splitIntoWords(
+            "1908年的ASR测试，开始！",
+            language: "zh",
+            granularity: .char
+        )
+        XCTAssertEqual(words, ["1908", "年", "的", "ASR", "测", "试", "开", "始"])
+    }
+
+    func testTextPreprocessingChinesePunctuationDoesNotCreateTokens() {
+        let words = TextPreprocessor.splitIntoWords(
+            "你好，世界。",
+            language: "Chinese"
+        )
+        XCTAssertEqual(words, ["你", "好", "世", "界"])
     }
 
     func testTextPreprocessingMixedCJK() {
@@ -31,6 +57,16 @@ final class ForcedAlignerTests: XCTestCase {
         XCTAssertEqual(words[1], "你")
         XCTAssertEqual(words[2], "好")
         XCTAssertEqual(words[3], "world")
+    }
+
+    func testTextPreprocessingAutoDetectsChineseForHanText() {
+        let words = TextPreprocessor.splitIntoWords("你好世界", language: nil)
+        XCTAssertEqual(words, ["你", "好", "世", "界"])
+    }
+
+    func testTextPreprocessingAutoDetectsWhitespaceLanguages() {
+        let words = TextPreprocessor.splitIntoWords("Hello world test", language: nil)
+        XCTAssertEqual(words, ["Hello", "world", "test"])
     }
 
     func testTimestampCorrectionAlreadyMonotonic() {

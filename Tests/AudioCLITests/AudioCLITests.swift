@@ -269,6 +269,33 @@ final class AlignCommandTests: XCTestCase {
         XCTAssertEqual(align.language, "de")
     }
 
+    func testParsesCharLevelFlag() throws {
+        let cmd = try AudioCLI.parseAsRoot(["align", "audio.wav", "--char-level"])
+        let align = try XCTUnwrap(cmd as? AlignCommand)
+        XCTAssertTrue(align.charLevel)
+        XCTAssertFalse(align.wordLevel)
+    }
+
+    func testParsesWordLevelFlag() throws {
+        let cmd = try AudioCLI.parseAsRoot(["align", "audio.wav", "--word-level"])
+        let align = try XCTUnwrap(cmd as? AlignCommand)
+        XCTAssertTrue(align.wordLevel)
+        XCTAssertFalse(align.charLevel)
+    }
+
+    func testNormalizesAutoLanguageToNil() throws {
+        let cmd = try AudioCLI.parseAsRoot(["align", "audio.wav", "--language", "auto"])
+        let align = try XCTUnwrap(cmd as? AlignCommand)
+        XCTAssertNil(align.normalizedLanguage)
+    }
+
+    func testRejectsConflictingGranularityFlags() {
+        XCTAssertThrowsError(try {
+            let cmd = try AudioCLI.parseAsRoot(["align", "audio.wav", "--char-level", "--word-level"])
+            try (cmd as? AlignCommand)?.validate()
+        }())
+    }
+
     func testMissingAudioFileFails() {
         XCTAssertThrowsError(try AudioCLI.parseAsRoot(["align"])) { error in
             XCTAssertEqual(AudioCLI.exitCode(for: error), .validationFailure)
