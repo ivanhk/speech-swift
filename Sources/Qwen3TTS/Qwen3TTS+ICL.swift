@@ -204,7 +204,7 @@ extension Qwen3TTSModel {
         let part1 = codecPrefixEmbed[0..., 4..., 0...]
         codecPrefixEmbed = concatenated([part0, spkEmbedReshaped, part1], axis: 1)  // [1, 7, D]
 
-        let codecSuffixEmbed = talker.embedCodec(
+        _ = talker.embedCodec(
             MLXArray([Int32(CodecTokens.codecPad), Int32(CodecTokens.codecBos)]).expandedDimensions(axis: 0))
 
         // 7. Role embedding: <|im_start|>assistant\n (3 tokens)

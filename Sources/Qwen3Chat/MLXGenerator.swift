@@ -274,7 +274,7 @@ public final class Qwen35MLXChat: @unchecked Sendable {
 
         var memInfo = mach_task_basic_info()
         var memCount = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
-        withUnsafeMutablePointer(to: &memInfo) {
+        _ = withUnsafeMutablePointer(to: &memInfo) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(memCount)) {
                 task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &memCount)
             }
@@ -296,60 +296,56 @@ public final class Qwen35MLXChat: @unchecked Sendable {
     ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             Task {
-                do {
-                    self.resetState()
+                self.resetState()
 
-                    let promptTokens = ChatTemplate.encode(
-                        messages: messages,
-                        tokenizer: self.tokenizer,
-                        config: self.config,
-                        enableThinking: false)
+                let promptTokens = ChatTemplate.encode(
+                    messages: messages,
+                    tokenizer: self.tokenizer,
+                    config: self.config,
+                    enableThinking: false)
 
-                    let promptArray = MLXArray(promptTokens.map { Int32($0) })
-                        .expandedDimensions(axis: 0)
-                    let (prefillLogits, prefillState) = self.model.forward(
-                        inputIds: promptArray, state: self.state)
-                    eval(prefillLogits)
-                    self.state = prefillState
+                let promptArray = MLXArray(promptTokens.map { Int32($0) })
+                    .expandedDimensions(axis: 0)
+                let (prefillLogits, prefillState) = self.model.forward(
+                    inputIds: promptArray, state: self.state)
+                eval(prefillLogits)
+                self.state = prefillState
 
-                    var logits = self.extractLastPositionLogits(prefillLogits)
-                    var generatedTokens: [Int] = []
-                    var inThinking = false
+                var logits = self.extractLastPositionLogits(prefillLogits)
+                var generatedTokens: [Int] = []
+                var inThinking = false
 
-                    for _ in 0..<sampling.maxTokens {
-                        let nextToken = ChatSampler.sample(
-                            logits: logits,
-                            config: sampling,
-                            previousTokens: promptTokens + generatedTokens)
+                for _ in 0..<sampling.maxTokens {
+                    let nextToken = ChatSampler.sample(
+                        logits: logits,
+                        config: sampling,
+                        previousTokens: promptTokens + generatedTokens)
 
-                        if nextToken == self.config.eosTokenId { break }
-                        if nextToken == ChatTemplate.imEndId { break }
+                    if nextToken == self.config.eosTokenId { break }
+                    if nextToken == ChatTemplate.imEndId { break }
 
-                        generatedTokens.append(nextToken)
+                    generatedTokens.append(nextToken)
 
-                        if nextToken == ChatTemplate.thinkStartId {
-                            inThinking = true
-                        } else if nextToken == ChatTemplate.thinkEndId {
-                            inThinking = false
-                        } else if !inThinking,
-                                  let text = self.tokenizer.decodeToken(nextToken),
-                                  !self.tokenizer.isSpecialToken(nextToken) {
-                            continuation.yield(text)
-                        }
-
-                        let tokenArr = MLXArray([Int32(nextToken)])
-                            .expandedDimensions(axis: 0)
-                        let (stepLogits, newState) = self.model.forward(
-                            inputIds: tokenArr, state: self.state)
-                        eval(stepLogits)
-                        self.state = newState
-                        logits = self.extractLastPositionLogits(stepLogits)
+                    if nextToken == ChatTemplate.thinkStartId {
+                        inThinking = true
+                    } else if nextToken == ChatTemplate.thinkEndId {
+                        inThinking = false
+                    } else if !inThinking,
+                              let text = self.tokenizer.decodeToken(nextToken),
+                              !self.tokenizer.isSpecialToken(nextToken) {
+                        continuation.yield(text)
                     }
 
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
+                    let tokenArr = MLXArray([Int32(nextToken)])
+                        .expandedDimensions(axis: 0)
+                    let (stepLogits, newState) = self.model.forward(
+                        inputIds: tokenArr, state: self.state)
+                    eval(stepLogits)
+                    self.state = newState
+                    logits = self.extractLastPositionLogits(stepLogits)
                 }
+
+                continuation.finish()
             }
         }
     }

@@ -136,7 +136,7 @@ public final class ChatTokenizer: @unchecked Sendable {
         }
 
         // Simple BPE encoding
-        var words = tokenizeToWords(text)
+        let words = tokenizeToWords(text)
         var allTokens: [Int] = []
 
         for word in words {

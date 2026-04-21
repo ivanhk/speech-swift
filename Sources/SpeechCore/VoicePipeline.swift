@@ -93,7 +93,7 @@ private final class ToolBridge {
 }
 
 /// Bridges a SpeechGenerationModel to the C vtable.
-private final class TTSBridge {
+private final class TTSBridge: @unchecked Sendable {
     let model: SpeechGenerationModel
     private let _cancelled = OSAllocatedUnfairLock(initialState: false)
     var cancelled: Bool {
