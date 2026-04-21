@@ -91,23 +91,23 @@ public struct AlignCommand: ParsableCommand {
 
             print("Aligning...")
             let start = Date()
-            let alignedUnits = aligner.align(
-                audio: audio,
-                text: alignText,
-                sampleRate: 24000,
-                language: language,
-                granularity: granularity
-            )
             let aligned: [AlignedWord]
             if sentenceLevel {
-                aligned = TextPreprocessor.aggregateAlignedUnitsIntoSentences(
-                    alignedUnits,
-                    originalText: alignText,
+                aligned = aligner.alignSentences(
+                    audio: audio,
+                    text: alignText,
+                    sampleRate: 24000,
                     language: language,
                     granularity: granularity
                 )
             } else {
-                aligned = alignedUnits
+                aligned = aligner.align(
+                    audio: audio,
+                    text: alignText,
+                    sampleRate: 24000,
+                    language: language,
+                    granularity: granularity
+                )
             }
             let elapsed = Date().timeIntervalSince(start)
 

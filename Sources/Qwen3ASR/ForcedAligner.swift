@@ -189,6 +189,56 @@ public class Qwen3ForcedAligner {
         return alignedWords
     }
 
+    /// Align text sentence-by-sentence, greedily advancing through the remaining audio.
+    ///
+    /// This is intended for CLI sentence-level output on long texts, where aligning
+    /// the full transcript in one pass can degrade later timestamps.
+    public func alignSentences(
+        audio: [Float],
+        text: String,
+        sampleRate: Int = 16000,
+        language: String?,
+        granularity: ForcedAlignmentGranularity = .automatic
+    ) -> [AlignedWord] {
+        let sentences = TextPreprocessor.splitIntoSentences(text)
+        guard !sentences.isEmpty else { return [] }
+
+        var alignedSentences: [AlignedWord] = []
+        var startSample = 0
+        let totalSamples = audio.count
+        let sampleRateFloat = Float(sampleRate)
+
+        for sentence in sentences {
+            guard startSample < totalSamples else { break }
+
+            let remainingAudio = Array(audio[startSample..<totalSamples])
+            let alignedUnits = align(
+                audio: remainingAudio,
+                text: sentence,
+                sampleRate: sampleRate,
+                language: language,
+                granularity: granularity
+            )
+
+            guard let first = alignedUnits.first, let last = alignedUnits.last else { continue }
+
+            let offsetSeconds = Float(startSample) / sampleRateFloat
+            let globalStart = offsetSeconds + first.startTime
+            let globalEnd = offsetSeconds + last.endTime
+
+            alignedSentences.append(AlignedWord(
+                text: sentence,
+                startTime: globalStart,
+                endTime: max(globalEnd, globalStart)
+            ))
+
+            let nextStart = Int(ceil(Double(max(globalEnd, globalStart)) * Double(sampleRate)))
+            startSample = max(startSample, min(nextStart, totalSamples))
+        }
+
+        return alignedSentences
+    }
+
     /// Align text to audio, producing word-level timestamps.
     ///
     /// Preserves the legacy API where `language` defaults to `"English"`.

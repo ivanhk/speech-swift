@@ -57,17 +57,10 @@ final class E2EForcedAlignerSentenceLevelTests: XCTestCase {
         let tts = try await ttsModel()
         let audio = try tts.synthesize(text: text, voice: voice, language: language)
         let aligner = try await alignerModel()
-        let alignedUnits = aligner.align(
+        let sentences = aligner.alignSentences(
             audio: audio,
             text: text,
             sampleRate: 24000,
-            language: language,
-            granularity: granularity
-        )
-
-        let sentences = TextPreprocessor.aggregateAlignedUnitsIntoSentences(
-            alignedUnits,
-            originalText: text,
             language: language,
             granularity: granularity
         )

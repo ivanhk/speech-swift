@@ -93,7 +93,7 @@ Each alignment unit gets `<timestamp>` pairs:
 - `--word-level` opts into tokenizer-based Chinese word segmentation
 - `--char-level` is available for explicitness and for scripts that mix Latin and Han text
 - These flags only affect Chinese/Han text; whitespace-delimited languages keep the existing behavior
-- `--sentence-level` changes only the final CLI grouping: the aligner still runs on unit-level timestamps, then adjacent units are folded back into sentence ranges
+- `--sentence-level` switches the CLI to sentence-by-sentence alignment on the remaining audio, returning one final range per sentence
 - `--sentence-level` applies to all languages and can be combined with `--char-level` or `--word-level`
 
 Language handling:
@@ -121,16 +121,16 @@ One forward pass through the decoder (no cache, no loop). Apply classify head to
 3. Multiply by 80ms → raw timestamps in seconds
 4. Pair consecutive timestamps as (start, end) per alignment unit
 
-### 5. Optional Sentence-Level CLI Grouping
+### 5. Optional Sentence-Level CLI Alignment
 
 When `audio align --sentence-level` is used, the CLI performs one extra post-processing step:
 
-1. Align the full text at the normal unit level
-2. Split the original text into sentences with Foundation `enumerateSubstrings(..., .bySentences)`
-3. Re-run the same unit segmentation rule for each sentence
-4. Fold contiguous unit timestamps into sentence ranges
+1. Split the original text into sentences with Foundation `enumerateSubstrings(..., .bySentences)`
+2. Align the first sentence against the full audio
+3. Advance to the end timestamp of that sentence
+4. Align the next sentence against the remaining audio, and repeat
 
-This preserves sentence punctuation in the final output while keeping the model and public aligner API unchanged.
+This keeps sentence punctuation in the final output and improves long-text stability because each forced-alignment pass sees only one sentence of text instead of the entire transcript.
 
 ### 6. LIS Monotonicity Correction (TimestampCorrection.swift)
 
