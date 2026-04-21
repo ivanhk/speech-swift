@@ -1,141 +1,132 @@
 import XCTest
 @testable import KokoroTTS
+@testable import Qwen3ASR
 import CoreML
 
-/// E2E tests that require downloaded CoreML models.
-/// Run with: swift test --filter KokoroE2ETests
+/// E2E tests using fromPretrained() — downloads models from HuggingFace.
+/// Run with: swift test --filter E2EKokoroTests
 final class E2EKokoroTests: XCTestCase {
 
-    static let testModelDir = "/tmp/kokoro-coreml-test"
+    private static var _sharedModel: KokoroTTSModel?
+    private static var _sharedASRModel: Qwen3ASRModel?
 
-    /// Test loading vocab_index.json from aufklarer/Kokoro-82M-CoreML.
-    func testLoadVocabIndex() throws {
-        let url = URL(fileURLWithPath: Self.testModelDir + "/vocab_index.json")
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw XCTSkip("Models not downloaded — run download script first")
-        }
-        let phonemizer = try KokoroPhonemizer.loadVocab(from: url)
-
-        // Tokenize a simple IPA string
-        let ids = phonemizer.tokenize("hello")
-        XCTAssertEqual(ids.first, 1) // BOS
-        XCTAssertEqual(ids.last, 2)  // EOS
-        XCTAssertTrue(ids.count >= 3)
+    private func model() async throws -> KokoroTTSModel {
+        if let m = Self._sharedModel { return m }
+        let m = try await KokoroTTSModel.fromPretrained()
+        Self._sharedModel = m
+        return m
     }
 
-    /// Test loading pronunciation dictionaries.
-    func testLoadDictionaries() throws {
-        let dir = URL(fileURLWithPath: Self.testModelDir)
-        guard FileManager.default.fileExists(atPath: dir.appendingPathComponent("us_gold.json").path) else {
-            throw XCTSkip("Models not downloaded")
+    private func asrModel() async throws -> Qwen3ASRModel {
+        if let m = Self._sharedASRModel { return m }
+        let m = try await Qwen3ASRModel.fromPretrained { progress, status in
+            print("[ASR \(Int(progress * 100))%] \(status)")
         }
-        let vocab = URL(fileURLWithPath: Self.testModelDir + "/vocab_index.json")
-        let phonemizer = try KokoroPhonemizer.loadVocab(from: vocab)
-        try phonemizer.loadDictionaries(from: dir)
-
-        // "hello" should be in the dictionary → produce IPA
-        let ids = phonemizer.tokenize("hello")
-        XCTAssertTrue(ids.count > 3, "Expected more than BOS+EOS for 'hello'")
+        Self._sharedASRModel = m
+        return m
     }
 
-    /// Test loading G2P encoder + decoder.
-    func testLoadG2PModels() throws {
-        let dir = URL(fileURLWithPath: Self.testModelDir)
-        let encoderURL = dir.appendingPathComponent("G2PEncoder.mlmodelc")
-        let decoderURL = dir.appendingPathComponent("G2PDecoder.mlmodelc")
-        let vocabURL = dir.appendingPathComponent("g2p_vocab.json")
-        guard FileManager.default.fileExists(atPath: encoderURL.path) else {
-            throw XCTSkip("Models not downloaded")
-        }
-
-        let mainVocab = URL(fileURLWithPath: Self.testModelDir + "/vocab_index.json")
-        let phonemizer = try KokoroPhonemizer.loadVocab(from: mainVocab)
-        try phonemizer.loadG2PModels(encoderURL: encoderURL, decoderURL: decoderURL, vocabURL: vocabURL)
-
-        // Try phonemizing an OOV word through the neural G2P
-        let ids = phonemizer.tokenize("supercalifragilistic")
-        XCTAssertTrue(ids.count > 3, "G2P should produce tokens for OOV word")
+    func testModelLoadsAndHasE2E() async throws {
+        let m = try await model()
+        XCTAssertTrue(m.availableVoices.contains("af_heart"))
+        // Regression (#212): `fromPretrained` used to download only one voice JSON,
+        // so `availableVoices` reported a single entry and non-default voices failed.
+        XCTAssertGreaterThan(m.availableVoices.count, 1,
+            "fromPretrained must download the full voice catalog, not just the default voice")
+        XCTAssertTrue(m.availableVoices.contains("jf_alpha"),
+            "Japanese voice preset must be available without re-downloading")
     }
 
-    /// Test loading voice embedding JSON.
-    func testLoadVoiceEmbedding() throws {
-        let voiceURL = URL(fileURLWithPath: Self.testModelDir + "/voices/af_heart.json")
-        guard FileManager.default.fileExists(atPath: voiceURL.path) else {
-            throw XCTSkip("Models not downloaded")
-        }
+    func testSynthesizeEnglish() async throws {
+        let m = try await model()
+        let audio = try m.synthesize(text: "The quick brown fox jumps over the lazy dog.", voice: "af_heart")
 
-        let data = try Data(contentsOf: voiceURL)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        let embedding = json["embedding"] as! [Double]
-
-        // Voice embedding is 256-dim (matches ref_s input)
-        XCTAssertEqual(embedding.count, 256)
-
-        let refS = embedding.map { Float($0) }
-        XCTAssertEqual(refS.count, 256)
-        XCTAssertFalse(refS.allSatisfy { $0 == 0 }, "Embedding shouldn't be all zeros")
-    }
-
-    /// Test loading the CoreML Kokoro model.
-    func testLoadKokoroModel() throws {
-        let dir = URL(fileURLWithPath: Self.testModelDir)
-        let modelURL = dir.appendingPathComponent("kokoro_21_5s.mlmodelc")
-        guard FileManager.default.fileExists(atPath: modelURL.path) else {
-            throw XCTSkip("Models not downloaded")
-        }
-
-        let network = try KokoroNetwork(directory: dir)
-        XCTAssertTrue(network.availableBuckets.contains(.v21_5s))
-    }
-
-    /// Full E2E: text → phonemes → CoreML inference → audio.
-    func testEndToEndSynthesis() throws {
-        let dir = URL(fileURLWithPath: Self.testModelDir)
-        guard FileManager.default.fileExists(atPath: dir.appendingPathComponent("kokoro_21_5s.mlmodelc").path) else {
-            throw XCTSkip("Models not downloaded")
-        }
-
-        // Load phonemizer
-        let vocab = dir.appendingPathComponent("vocab_index.json")
-        let phonemizer = try KokoroPhonemizer.loadVocab(from: vocab)
-        try phonemizer.loadDictionaries(from: dir)
-
-        let encoderURL = dir.appendingPathComponent("G2PEncoder.mlmodelc")
-        let decoderURL = dir.appendingPathComponent("G2PDecoder.mlmodelc")
-        let vocabURL = dir.appendingPathComponent("g2p_vocab.json")
-        if FileManager.default.fileExists(atPath: encoderURL.path) {
-            try phonemizer.loadG2PModels(encoderURL: encoderURL, decoderURL: decoderURL, vocabURL: vocabURL)
-        }
-
-        // Load voice embedding (256-dim)
-        let voiceData = try Data(contentsOf: dir.appendingPathComponent("voices/af_heart.json"))
-        let voiceJson = try JSONSerialization.jsonObject(with: voiceData) as! [String: Any]
-        let embedding = voiceJson["embedding"] as! [Double]
-        let styleVector = embedding.map { Float($0) }
-
-        // Load network
-        let network = try KokoroNetwork(directory: dir)
-
-        // Create model
-        let config = KokoroConfig.default
-        let model = KokoroTTSModel(
-            config: config,
-            network: network,
-            phonemizer: phonemizer,
-            voiceEmbeddings: ["af_heart": styleVector]
-        )
-
-        // Synthesize
-        let audio = try model.synthesize(text: "Hello world", voice: "af_heart")
-
-        XCTAssertTrue(audio.count > 0, "Should produce audio samples")
-        XCTAssertTrue(audio.count > 1000, "Should produce meaningful audio (got \(audio.count) samples)")
-
+        XCTAssertGreaterThan(audio.count, 1000, "Should produce meaningful audio")
         let duration = Double(audio.count) / 24000.0
-        print("E2E synthesis: \(audio.count) samples, \(String(format: "%.2f", duration))s")
+        print("English: \(audio.count) samples (\(String(format: "%.2f", duration))s)")
+        XCTAssertGreaterThan(duration, 0.3)
+        XCTAssertLessThan(duration, 10.0)
 
-        // Audio should have non-zero energy
         let rms = sqrt(audio.map { $0 * $0 }.reduce(0, +) / Float(audio.count))
-        XCTAssertGreaterThan(rms, 0.001, "Audio should have non-zero energy")
+        XCTAssertGreaterThan(rms, 0.001, "Audio should not be silence")
+    }
+
+    func testSynthesizeShortText() async throws {
+        let m = try await model()
+        let audio = try m.synthesize(text: "Hi", voice: "af_heart")
+        XCTAssertGreaterThan(audio.count, 0, "Even short text should produce audio")
+    }
+
+    func testPhonemizerTokenizes() async throws {
+        let m = try await model()
+        // Verify phonemizer works via synthesis (if tokenization fails, synthesis throws)
+        let audio = try m.synthesize(text: "Hello world", voice: "af_heart")
+        XCTAssertGreaterThan(audio.count, 1000)
+    }
+
+    // MARK: - Chinese Roundtrip
+
+    /// Synthesize Chinese text with Kokoro, transcribe with Qwen3-ASR, verify output.
+    /// Kokoro-82M is a lightweight model — phonemization is approximate, so we verify
+    /// that the output is recognizable Chinese speech (not silence or garbled noise).
+    func testChineseRoundTrip() async throws {
+        let tts = try await model()
+        let asr = try await asrModel()
+
+        let inputText = "你好世界，这是一个测试。"
+        let audio = try tts.synthesize(text: inputText, voice: "zf_xiaobei", language: "zh")
+
+        XCTAssertGreaterThan(audio.count, 1000, "Should produce meaningful audio")
+        let duration = Double(audio.count) / 24000.0
+        print("Chinese TTS: \(audio.count) samples (\(String(format: "%.2f", duration))s)")
+
+        let rms = sqrt(audio.map { $0 * $0 }.reduce(0, +) / Float(audio.count))
+        XCTAssertGreaterThan(rms, 0.001, "Audio should not be silence")
+
+        let transcription = asr.transcribe(audio: audio, sampleRate: 24000)
+        print("Input:  \"\(inputText)\"")
+        print("Output: \"\(transcription)\"")
+
+        // Verify ASR produces Chinese characters (not empty or ASCII-only)
+        let hasChinese = transcription.unicodeScalars.contains { (0x4E00...0x9FFF).contains($0.value) }
+        XCTAssertTrue(hasChinese, "ASR should recognize Chinese speech: \"\(transcription)\"")
+
+        // Check overlap: individual characters from input that appear in transcription
+        let inputChars = Set(inputText.filter { $0 != "，" && $0 != "。" })
+        let matchedChars = inputChars.filter { transcription.contains($0) }
+        print("Matched \(matchedChars.count)/\(inputChars.count) characters: \(String(matchedChars.sorted()))")
+
+        XCTAssertGreaterThanOrEqual(matchedChars.count, 3,
+            "At least 3 input characters should appear in: \"\(transcription)\"")
+    }
+
+    // MARK: - Japanese Roundtrip
+
+    /// Synthesize Japanese text with Kokoro, transcribe with Qwen3-ASR, verify keywords.
+    func testJapaneseRoundTrip() async throws {
+        let tts = try await model()
+        let asr = try await asrModel()
+
+        let inputText = "こんにちは世界。"
+        let audio = try tts.synthesize(text: inputText, voice: "jf_alpha", language: "ja")
+
+        XCTAssertGreaterThan(audio.count, 1000, "Should produce meaningful audio")
+        let duration = Double(audio.count) / 24000.0
+        print("Japanese TTS: \(audio.count) samples (\(String(format: "%.2f", duration))s)")
+
+        let rms = sqrt(audio.map { $0 * $0 }.reduce(0, +) / Float(audio.count))
+        XCTAssertGreaterThan(rms, 0.001, "Audio should not be silence")
+
+        let transcription = asr.transcribe(audio: audio, sampleRate: 24000)
+        print("Input:  \"\(inputText)\"")
+        print("Output: \"\(transcription)\"")
+
+        // Check key Japanese text appears
+        let expectedPhrases = ["こんにちは", "世界"]
+        let matchedPhrases = expectedPhrases.filter { transcription.contains($0) }
+        print("Matched \(matchedPhrases.count)/\(expectedPhrases.count) phrases: \(matchedPhrases)")
+
+        XCTAssertGreaterThanOrEqual(matchedPhrases.count, 1,
+            "At least 1 of \(expectedPhrases) should appear in: \"\(transcription)\"")
     }
 }

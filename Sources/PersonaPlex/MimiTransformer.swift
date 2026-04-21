@@ -2,6 +2,7 @@ import Foundation
 import MLX
 import MLXFast
 import MLXNN
+import MLXCommon
 
 // MARK: - LayerScale
 
@@ -79,10 +80,9 @@ public final class MimiAttention: Module {
             maskMode = .array(causal.reshaped([1, 1, t, actualKVLen]).asType(q.dtype))
         }
 
-        var out = MLXFast.scaledDotProductAttention(
-            queries: q, keys: k, values: v, scale: scale, mask: maskMode)
-        out = swappedAxes(out, 1, 2).reshaped([b, t, hd])
-        return out_proj(out)
+        let merged = SDPA.attendAndMerge(
+            qHeads: q, kHeads: k, vHeads: v, scale: scale, mask: maskMode)
+        return out_proj(merged)
     }
 }
 
@@ -219,7 +219,7 @@ public final class MimiTransformer: Module {
         return x
     }
 
-    public func makeCache() -> [KVCacheSimple] {
+    public func makeCache() -> [any KVCache] {
         (0..<cfg.numLayers).map { _ in KVCacheSimple() }
     }
 }
@@ -270,5 +270,5 @@ public final class ProjectedTransformer: Module {
         }
     }
 
-    public func makeCache() -> [KVCacheSimple] { transformer.makeCache() }
+    public func makeCache() -> [any KVCache] { transformer.makeCache() }
 }

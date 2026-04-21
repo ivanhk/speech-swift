@@ -1574,6 +1574,8 @@ public extension Qwen3TTSModel {
     static func fromPretrained(
         modelId: String = "aufklarer/Qwen3-TTS-12Hz-0.6B-Base-MLX-4bit",
         tokenizerModelId: String = "Qwen/Qwen3-TTS-Tokenizer-12Hz",
+        cacheDir: URL? = nil,
+        offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> Qwen3TTSModel {
         progressHandler?(0.05, "Preparing download...")
@@ -1583,13 +1585,14 @@ public extension Qwen3TTSModel {
         var detectedBits = TTSModelSize.detectBits(from: modelId)
 
         // Download main model weights
-        let mainCacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
-        if !ModelScopeDownloader.weightsExist(in: mainCacheDir) {
+        let mainCacheDir = try cacheDir ?? HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        if !HuggingFaceDownloader.weightsExist(in: mainCacheDir) {
             progressHandler?(0.1, "Downloading TTS model weights...")
             try await ModelScopeDownloader.downloadWeights(
                 modelId: modelId,
                 to: mainCacheDir,
                 additionalFiles: ["vocab.json", "merges.txt", "tokenizer_config.json"],
+                offlineMode: offlineMode,
                 progressHandler: { progress in
                     progressHandler?(0.1 + progress * 0.3, "Downloading TTS model...")
                 })
@@ -1602,6 +1605,7 @@ public extension Qwen3TTSModel {
             try await ModelScopeDownloader.downloadWeights(
                 modelId: tokenizerModelId,
                 to: tokenizerCacheDir,
+                offlineMode: offlineMode,
                 progressHandler: { progress in
                     progressHandler?(0.4 + progress * 0.2, "Downloading speech tokenizer...")
                 })
@@ -1651,6 +1655,7 @@ public extension Qwen3TTSModel {
         progressHandler?(0.95, "Warming up model...")
         model.warmUp()
 
+        MetalBudget.pinMemory()
         progressHandler?(1.0, "Ready")
         return model
     }

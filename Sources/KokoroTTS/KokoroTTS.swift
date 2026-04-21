@@ -5,9 +5,10 @@ import AudioCommon
 /// Kokoro-82M text-to-speech — CoreML-based, runs on Neural Engine.
 ///
 /// Lightweight (82M params) non-autoregressive TTS model.
-/// Supports 8 languages with 50 preset voices. Designed for iOS/iPad deployment.
+/// Supports 10 languages with 54 preset voices. Designed for iOS/iPad deployment.
 ///
-/// Uses pre-converted CoreML models from aufklarer/Kokoro-82M-CoreML.
+/// Uses an end-to-end CoreML model (`kokoro_5s.mlmodelc`) that runs the full
+/// pipeline (BERT → duration → alignment → prosody → decoder) in one call.
 ///
 /// ```swift
 /// let tts = try await KokoroTTSModel.fromPretrained()
@@ -17,26 +18,19 @@ public final class KokoroTTSModel {
 
     /// Default HuggingFace model ID.
     public static let defaultModelId = "aufklarer/Kokoro-82M-CoreML"
-
-    /// Output sample rate (24kHz).
+    /// Default voice preset.
+    public static let defaultVoice = "af_heart"
+    /// Output sample rate.
     public static let outputSampleRate = 24000
 
-    /// Model configuration.
-    public let config: KokoroConfig
-
-    /// Whether the model is loaded and ready for inference.
-    var _isLoaded = true
-
+    let config: KokoroConfig
     var network: KokoroNetwork?
-    private let phonemizer: KokoroPhonemizer
+    let phonemizer: KokoroPhonemizer
     var voiceEmbeddings: [String: [Float]]
 
-    init(
-        config: KokoroConfig,
-        network: KokoroNetwork,
-        phonemizer: KokoroPhonemizer,
-        voiceEmbeddings: [String: [Float]]
-    ) {
+    var _isLoaded: Bool { network != nil }
+
+    init(config: KokoroConfig, network: KokoroNetwork, phonemizer: KokoroPhonemizer, voiceEmbeddings: [String: [Float]]) {
         self.config = config
         self.network = network
         self.phonemizer = phonemizer
@@ -46,45 +40,20 @@ public final class KokoroTTSModel {
     // MARK: - Synthesis
 
     /// Synthesize speech from text.
-    ///
-    /// - Parameters:
-    ///   - text: Input text to speak
-    ///   - voice: Voice preset name (default: "af_heart")
-    ///   - language: Language code (default: "en")
-    /// - Returns: Audio samples at 24kHz, Float32
     public func synthesize(
         text: String,
         voice: String = "af_heart",
-        language: String = "en"
+        language: String = "en",
+        speed: Float = 1.0
     ) throws -> [Float] {
         guard _isLoaded, let network else {
             throw AudioModelError.inferenceFailed(
                 operation: "kokoro-synthesize", reason: "Model not loaded")
         }
 
-        // Step 1: Phonemize text → token IDs
-        let tokenIds = phonemizer.tokenize(text, maxLength: config.maxPhonemeLength)
+        let tokenIds = phonemizer.tokenize(text, maxLength: config.maxPhonemeLength, language: language)
+        let tokenCount = min(tokenIds.count, 128)
 
-        // Step 2: Select model bucket based on token count
-        guard let bucket = ModelBucket.select(forTokenCount: tokenIds.count) else {
-            throw AudioModelError.inferenceFailed(
-                operation: "kokoro-synthesize",
-                reason: "Text too long (\(tokenIds.count) tokens), max \(ModelBucket.v21_15s.maxTokens)")
-        }
-
-        // Check if we have this bucket loaded, fall back if needed
-        let activeBucket: ModelBucket
-        if network.availableBuckets.contains(bucket) {
-            activeBucket = bucket
-        } else if let fallback = network.availableBuckets.first(where: { $0.maxTokens >= tokenIds.count }) {
-            activeBucket = fallback
-        } else {
-            throw AudioModelError.inferenceFailed(
-                operation: "kokoro-synthesize",
-                reason: "No suitable model bucket for \(tokenIds.count) tokens")
-        }
-
-        // Step 3: Get voice style embedding (256-dim)
         guard let styleVector = voiceEmbeddings[voice] else {
             let available = Array(voiceEmbeddings.keys).sorted().prefix(5)
             throw AudioModelError.voiceNotFound(
@@ -92,59 +61,33 @@ public final class KokoroTTSModel {
                 searchPath: "Available: \(available.joined(separator: ", "))...")
         }
 
-        // Step 4: Pad tokens to bucket's max length
-        let maxTokens = activeBucket.maxTokens
-        let paddedIds = phonemizer.pad(tokenIds, to: maxTokens)
+        let padTo = 128
+        let paddedIds = phonemizer.pad(Array(tokenIds.prefix(padTo)), to: padTo)
 
-        // Step 5: Create MLMultiArray inputs
-        let inputIds = try MLMultiArray(shape: [1, maxTokens as NSNumber], dataType: .int32)
-        let maskArray = try MLMultiArray(shape: [1, maxTokens as NSNumber], dataType: .int32)
-        let inputPtr = inputIds.dataPointer.assumingMemoryBound(to: Int32.self)
-        let maskPtr = maskArray.dataPointer.assumingMemoryBound(to: Int32.self)
-        for i in 0..<maxTokens {
-            inputPtr[i] = Int32(paddedIds[i])
-            maskPtr[i] = (i < tokenIds.count) ? 1 : 0
-        }
+        let inputIds = try createInt32Array(shape: [1, padTo], values: paddedIds.map { Int32($0) })
+        let maskArray = try createInt32Array(shape: [1, padTo], values: (0..<padTo).map { Int32($0 < tokenCount ? 1 : 0) })
+        let refS = try createFloatArray(shape: [1, config.styleDim], values: styleVector)
+        let speedArray = try createFloatArray(shape: [1], values: [speed])
 
-        let refS = try MLMultiArray(shape: [1, config.styleDim as NSNumber], dataType: .float32)
-        let refPtr = refS.dataPointer.assumingMemoryBound(to: Float.self)
-        for i in 0..<min(styleVector.count, config.styleDim) {
-            refPtr[i] = styleVector[i]
-        }
-
-        let randomPhases = try MLMultiArray(shape: [1, config.numPhases as NSNumber], dataType: .float32)
-        let phasePtr = randomPhases.dataPointer.assumingMemoryBound(to: Float.self)
-        for i in 0..<config.numPhases {
-            phasePtr[i] = Float.random(in: 0..<(2 * .pi))
-        }
-
-        // Step 6: Run end-to-end model
-        AudioLog.inference.debug("Kokoro: \(tokenIds.count) tokens → \(activeBucket.modelName) bucket")
         let t0 = CFAbsoluteTimeGetCurrent()
-        let output = try network.predict(
-            inputIds: inputIds,
-            attentionMask: maskArray,
-            refS: refS,
-            randomPhases: randomPhases,
-            bucket: activeBucket
-        )
-        let t1 = CFAbsoluteTimeGetCurrent()
+        let result = try network.predictE2E(inputIds: inputIds, attentionMask: maskArray, refS: refS, speed: speedArray)
+        let elapsed = CFAbsoluteTimeGetCurrent() - t0
 
-        // Step 7: Extract audio samples
-        let validSamples: Int
-        if let lengthArray = output.audioLengthSamples {
-            validSamples = lengthArray[0].intValue
+        let validSamples = min(result.audioLengthSamples, result.audio.count)
+        guard validSamples > 0 else { return [] }
+
+        var audio = [Float](repeating: 0, count: validSamples)
+        if result.audio.dataType == .float16 {
+            let ptr = result.audio.dataPointer.bindMemory(to: Float16.self, capacity: validSamples)
+            for i in 0..<validSamples { audio[i] = Float(ptr[i]) }
         } else {
-            validSamples = output.audio.count
+            let ptr = result.audio.dataPointer.bindMemory(to: Float.self, capacity: validSamples)
+            for i in 0..<validSamples { audio[i] = ptr[i] }
         }
-        let audio = extractAudio(from: output.audio, sampleCount: validSamples)
 
-        let elapsedMs = (t1 - t0) * 1000
-        let duration = Double(audio.count) / Double(config.sampleRate)
-        print("Kokoro: \(String(format: "%.1f", elapsedMs))ms, " +
-              "\(String(format: "%.2f", duration))s audio, " +
-              "RTFx=\(String(format: "%.1f", duration / (elapsedMs / 1000)))")
-
+        let duration = Double(validSamples) / Double(config.sampleRate)
+        let elapsedMs = elapsed * 1000
+        AudioLog.inference.info("Kokoro E2E: \(tokenCount) tokens → \(validSamples) samples (\(String(format: "%.1f", duration))s) in \(String(format: "%.0f", elapsedMs))ms")
         return audio
     }
 
@@ -153,28 +96,25 @@ public final class KokoroTTSModel {
         Array(voiceEmbeddings.keys).sorted()
     }
 
-    // MARK: - Audio Extraction
+    // MARK: - Helpers
 
-    private func extractAudio(from array: MLMultiArray, sampleCount: Int) -> [Float] {
-        let count = min(array.count, max(0, sampleCount))
-        guard count > 0 else { return [] }
+    private func createInt32Array(shape: [Int], values: [Int32]) throws -> MLMultiArray {
+        let arr = try MLMultiArray(shape: shape.map { $0 as NSNumber }, dataType: .int32)
+        let ptr = arr.dataPointer.assumingMemoryBound(to: Int32.self)
+        for i in 0..<values.count { ptr[i] = values[i] }
+        return arr
+    }
 
-        var samples = [Float](repeating: 0, count: count)
-        if array.dataType == .float16 {
-            let ptr = array.dataPointer.assumingMemoryBound(to: Float16.self)
-            for i in 0..<count { samples[i] = Float(ptr[i]) }
-        } else {
-            let ptr = array.dataPointer.assumingMemoryBound(to: Float.self)
-            samples.withUnsafeMutableBufferPointer { dst in
-                dst.baseAddress!.update(from: ptr, count: count)
-            }
-        }
-        return samples
+    private func createFloatArray(shape: [Int], values: [Float]) throws -> MLMultiArray {
+        let arr = try MLMultiArray(shape: shape.map { $0 as NSNumber }, dataType: .float32)
+        let ptr = arr.dataPointer.assumingMemoryBound(to: Float.self)
+        for i in 0..<values.count { ptr[i] = values[i] }
+        return arr
     }
 
     // MARK: - Warmup
 
-    /// Warm up CoreML models by running a dummy inference.
+    /// Warm up CoreML model by running a dummy inference.
     public func warmUp() throws {
         _ = try? synthesize(text: "hello", voice: availableVoices.first ?? "af_heart")
     }
@@ -182,29 +122,18 @@ public final class KokoroTTSModel {
     // MARK: - Model Loading
 
     /// Load a pretrained Kokoro model from HuggingFace.
-    ///
-    /// Downloads CoreML models and voice embeddings on first use, then caches locally.
-    /// Default voice preset.
-    public static let defaultVoice = "af_heart"
-
     public static func fromPretrained(
         modelId: String = defaultModelId,
         voice: String = defaultVoice,
+        cacheDir: URL? = nil,
+        offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> KokoroTTSModel {
         AudioLog.modelLoading.info("Loading Kokoro model: \(modelId)")
 
-        let cacheDir: URL
-        do {
-            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
-        } catch {
-            throw AudioModelError.modelLoadFailed(
-                modelId: modelId, reason: "Failed to resolve cache directory", underlying: error)
-        }
+        let cacheDir = try cacheDir ?? HuggingFaceDownloader.getCacheDirectory(for: modelId)
 
-        // Download single model variant + config + single voice.
-        // kokoro_21_5s is the smallest bucket (max 124 tokens, ~5s audio)
-        // — sufficient for short TTS and uses less memory than larger buckets.
+        // Download E2E model + G2P + voice
         progressHandler?(0.0, "Downloading model...")
         do {
             try await ModelScopeDownloader.downloadWeights(
@@ -219,7 +148,8 @@ public final class KokoroTTSModel {
                     "us_gold.json",
                     "us_silver.json",
                     "voices/\(voice).json",
-                ]
+                ],
+                offlineMode: offlineMode
             ) { fraction in
                 progressHandler?(fraction * 0.7, "Downloading model...")
             }
@@ -228,28 +158,16 @@ public final class KokoroTTSModel {
                 modelId: modelId, reason: "Download failed", underlying: error)
         }
 
-        let voicesDir = cacheDir.appendingPathComponent("voices")
-
-        // Load config
-        progressHandler?(0.70, "Loading configuration...")
-        let config = KokoroConfig.default
-
-        // Load vocabulary (vocab_index.json maps IPA symbols → token IDs)
+        // Load vocabulary
         progressHandler?(0.72, "Loading vocabulary...")
         let vocabURL = cacheDir.appendingPathComponent("vocab_index.json")
-        let phonemizer: KokoroPhonemizer
-        if FileManager.default.fileExists(atPath: vocabURL.path) {
-            phonemizer = try KokoroPhonemizer.loadVocab(from: vocabURL)
-        } else {
-            throw AudioModelError.modelLoadFailed(
-                modelId: modelId, reason: "vocab_index.json not found")
+        guard FileManager.default.fileExists(atPath: vocabURL.path) else {
+            throw AudioModelError.modelLoadFailed(modelId: modelId, reason: "vocab_index.json not found")
         }
-
-        // Load pronunciation dictionaries
-        progressHandler?(0.74, "Loading pronunciation dictionaries...")
+        let phonemizer = try KokoroPhonemizer.loadVocab(from: vocabURL)
         try phonemizer.loadDictionaries(from: cacheDir)
 
-        // Load G2P models (separate encoder + decoder)
+        // Load G2P models
         progressHandler?(0.76, "Loading G2P models...")
         let g2pEncoderURL = cacheDir.appendingPathComponent("G2PEncoder.mlmodelc", isDirectory: true)
         let g2pDecoderURL = cacheDir.appendingPathComponent("G2PDecoder.mlmodelc", isDirectory: true)
@@ -257,60 +175,43 @@ public final class KokoroTTSModel {
         if FileManager.default.fileExists(atPath: g2pEncoderURL.path) &&
            FileManager.default.fileExists(atPath: g2pDecoderURL.path) {
             try phonemizer.loadG2PModels(
-                encoderURL: g2pEncoderURL,
-                decoderURL: g2pDecoderURL,
-                vocabURL: g2pVocabURL
-            )
+                encoderURL: g2pEncoderURL, decoderURL: g2pDecoderURL, vocabURL: g2pVocabURL)
             AudioLog.modelLoading.debug("Loaded CoreML G2P encoder + decoder")
         }
 
-        // Load voice embeddings from per-voice JSON files
+        // Load voice embeddings
         progressHandler?(0.78, "Loading voice embeddings...")
         var voiceEmbeddings = [String: [Float]]()
+        let voicesDir = cacheDir.appendingPathComponent("voices")
         if FileManager.default.fileExists(atPath: voicesDir.path) {
-            let files = try FileManager.default.contentsOfDirectory(
-                at: voicesDir, includingPropertiesForKeys: nil)
+            let files = try FileManager.default.contentsOfDirectory(at: voicesDir, includingPropertiesForKeys: nil)
             for file in files where file.pathExtension == "json" {
                 let voiceName = file.deletingPathExtension().lastPathComponent
-                if let embedding = try? loadVoiceEmbedding(from: file, styleDim: config.styleDim) {
+                if let embedding = try? loadVoiceEmbedding(from: file, styleDim: KokoroConfig.default.styleDim) {
                     voiceEmbeddings[voiceName] = embedding
                 }
             }
             AudioLog.modelLoading.debug("Loaded \(voiceEmbeddings.count) voice presets")
         }
 
-        // Load CoreML TTS models
-        progressHandler?(0.85, "Loading CoreML models...")
-        let network: KokoroNetwork
-        do {
-            network = try KokoroNetwork(directory: cacheDir)
-            AudioLog.modelLoading.debug("Loaded buckets: \(network.availableBuckets.map { $0.modelName })")
-        } catch {
-            throw AudioModelError.modelLoadFailed(
-                modelId: modelId, reason: "Failed to load CoreML models", underlying: error)
-        }
+        // Load E2E CoreML model
+        progressHandler?(0.85, "Loading CoreML model...")
+        let network = try KokoroNetwork(directory: cacheDir)
+        AudioLog.modelLoading.debug("Loaded Kokoro E2E model")
 
         progressHandler?(1.0, "Model loaded")
         AudioLog.modelLoading.info("Kokoro model loaded successfully")
 
         return KokoroTTSModel(
-            config: config,
-            network: network,
-            phonemizer: phonemizer,
-            voiceEmbeddings: voiceEmbeddings
-        )
+            config: .default, network: network,
+            phonemizer: phonemizer, voiceEmbeddings: voiceEmbeddings)
     }
 
-    /// Load voice embedding from a per-voice JSON file.
-    ///
-    /// Voice JSON contains: {"embedding": [256 floats], "1": [256], ..., "510": [256]}
-    /// The model's ref_s input is [1, 256]. We use the "embedding" key.
+    /// Load voice embedding from JSON file.
     private static func loadVoiceEmbedding(from url: URL, styleDim: Int) throws -> [Float] {
         let data = try Data(contentsOf: url)
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let embedding = json["embedding"] as? [Double] else {
-            return []
-        }
+              let embedding = json["embedding"] as? [Double] else { return [] }
         return embedding.prefix(styleDim).map { Float($0) }
     }
 }

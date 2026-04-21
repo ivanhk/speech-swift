@@ -1,11 +1,11 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 5.10
 import PackageDescription
 
 let package = Package(
     name: "Qwen3Speech",
     platforms: [
-        .macOS(.v14),
-        .iOS(.v17)
+        .macOS("15.0"),
+        .iOS("18.0")
     ],
     products: [
         .library(
@@ -41,6 +41,14 @@ let package = Package(
             targets: ["ParakeetASR"]
         ),
         .library(
+            name: "ParakeetStreamingASR",
+            targets: ["ParakeetStreamingASR"]
+        ),
+        .library(
+            name: "OmnilingualASR",
+            targets: ["OmnilingualASR"]
+        ),
+        .library(
             name: "SpeechCore",
             targets: ["SpeechCore"]
         ),
@@ -49,8 +57,20 @@ let package = Package(
             targets: ["KokoroTTS"]
         ),
         .library(
+            name: "Qwen3TTSCoreML",
+            targets: ["Qwen3TTSCoreML"]
+        ),
+        .library(
             name: "Qwen3Chat",
             targets: ["Qwen3Chat"]
+        ),
+        .library(
+            name: "SpeechUI",
+            targets: ["SpeechUI"]
+        ),
+        .library(
+            name: "SpeechWakeWord",
+            targets: ["SpeechWakeWord"]
         ),
         .executable(
             name: "audio",
@@ -81,6 +101,7 @@ let package = Package(
                 "AudioCommon",
                 .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "MLXNN", package: "mlx-swift"),
+                .product(name: "MLXFast", package: "mlx-swift"),
             ]
         ),
         .target(
@@ -102,6 +123,12 @@ let package = Package(
                 .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "MLXNN", package: "mlx-swift"),
                 .product(name: "MLXFast", package: "mlx-swift")
+            ]
+        ),
+        .target(
+            name: "Qwen3TTSCoreML",
+            dependencies: [
+                "AudioCommon",
             ]
         ),
         .target(
@@ -146,10 +173,26 @@ let package = Package(
                 "AudioCommon",
             ]
         ),
+        .target(
+            name: "ParakeetStreamingASR",
+            dependencies: [
+                "AudioCommon",
+            ]
+        ),
+        .target(
+            name: "OmnilingualASR",
+            dependencies: [
+                "AudioCommon",
+                "MLXCommon",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXNN", package: "mlx-swift"),
+                .product(name: "MLXFast", package: "mlx-swift")
+            ]
+        ),
         .binaryTarget(
             name: "CSpeechCore",
-            url: "https://github.com/soniqo/speech-core/releases/download/v0.0.4/SpeechCore.xcframework.zip",
-            checksum: "5e48d536134d147ac0162c67df39d59a60bdfc0f9c2793e81e4bb6046f06d15f"
+            url: "https://github.com/soniqo/speech-core/releases/download/v0.0.5/SpeechCore.xcframework.zip",
+            checksum: "ec87ae9191875390e19cd2aa74bfdbd8f314c4a0e83dfe012eed4d1ca30c4a5d"
         ),
         .target(
             name: "SpeechCore",
@@ -162,13 +205,28 @@ let package = Package(
             name: "KokoroTTS",
             dependencies: [
                 "AudioCommon",
+            ],
+            resources: [
+                .copy("Resources"),
             ]
         ),
         .target(
             name: "Qwen3Chat",
             dependencies: [
                 "AudioCommon",
+                "MLXCommon",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXNN", package: "mlx-swift"),
+                .product(name: "MLXFast", package: "mlx-swift"),
             ]
+        ),
+        .target(
+            name: "SpeechUI",
+            dependencies: []
+        ),
+        .target(
+            name: "SpeechWakeWord",
+            dependencies: ["AudioCommon"]
         ),
         .target(
             name: "AudioCLILib",
@@ -176,11 +234,15 @@ let package = Package(
                 "Qwen3ASR",
                 "Qwen3TTS",
                 "CosyVoiceTTS",
+                "Qwen3TTSCoreML",
                 "PersonaPlex",
                 "SpeechVAD",
                 "SpeechEnhancement",
                 "ParakeetASR",
+                "ParakeetStreamingASR",
+                "OmnilingualASR",
                 "KokoroTTS",
+                "SpeechWakeWord",
                 "AudioCommon",
                 .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
@@ -226,6 +288,10 @@ let package = Package(
             dependencies: ["Qwen3TTS", "Qwen3ASR", "AudioCommon"]
         ),
         .testTarget(
+            name: "Qwen3TTSCoreMLTests",
+            dependencies: ["Qwen3TTSCoreML", "Qwen3ASR", "AudioCommon"]
+        ),
+        .testTarget(
             name: "CosyVoiceTTSTests",
             dependencies: ["CosyVoiceTTS", "AudioCommon"]
         ),
@@ -241,7 +307,26 @@ let package = Package(
             name: "ParakeetASRTests",
             dependencies: ["ParakeetASR", "AudioCommon"],
             resources: [
+                .copy("Resources/test_audio.wav"),
+                .copy("Resources/test_audio_german.wav")
+            ]
+        ),
+        .testTarget(
+            name: "ParakeetStreamingASRTests",
+            dependencies: ["ParakeetStreamingASR", "AudioCommon"],
+            resources: [
                 .copy("Resources/test_audio.wav")
+            ]
+        ),
+        .testTarget(
+            name: "OmnilingualASRTests",
+            dependencies: ["OmnilingualASR", "AudioCommon"],
+            resources: [
+                .copy("Resources/test_audio.wav"),
+                .copy("Resources/fleurs_en.wav"),
+                .copy("Resources/fleurs_hi.wav"),
+                .copy("Resources/fleurs_fr.wav"),
+                .copy("Resources/fleurs_ar.wav")
             ]
         ),
         .testTarget(
@@ -255,6 +340,7 @@ let package = Package(
             dependencies: [
                 "KokoroTTS",
                 "AudioCommon",
+                "Qwen3ASR",
             ]
         ),
         .testTarget(
@@ -283,6 +369,41 @@ let package = Package(
             name: "AudioServerTests",
             dependencies: [
                 "AudioServer"
+            ]
+        ),
+        .testTarget(
+            name: "SpeechCoreTests",
+            dependencies: [
+                "SpeechCore",
+                "AudioCommon",
+                "SpeechVAD",
+                "KokoroTTS",
+                "ParakeetASR"
+            ]
+        ),
+        .testTarget(
+            name: "SpeechUITests",
+            dependencies: [
+                "SpeechUI",
+                "ParakeetStreamingASR",
+                "AudioCommon"
+            ],
+            resources: [
+                .copy("Resources/test_audio.wav")
+            ]
+        ),
+        .testTarget(
+            name: "SpeechWakeWordTests",
+            dependencies: [
+                "SpeechWakeWord",
+                "AudioCommon"
+            ],
+            resources: [
+                .copy("Resources/fbank_input.wav"),
+                .copy("Resources/fbank_reference.bin"),
+                .copy("Resources/kws_light_up.wav"),
+                .copy("Resources/kws_lovely_child.wav"),
+                .copy("Resources/ref_encoder_light_up.bin")
             ]
         )
     ]

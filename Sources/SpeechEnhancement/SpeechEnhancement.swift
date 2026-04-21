@@ -226,20 +226,27 @@ public final class SpeechEnhancer {
     /// - Returns: Ready-to-use speech enhancer
     public static func fromPretrained(
         modelId: String = defaultModelId,
+        cacheDir: URL? = nil,
+        offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> SpeechEnhancer {
         progressHandler?(0.0, "Downloading model...")
 
-        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try cacheDir ?? HuggingFaceDownloader.getCacheDirectory(for: modelId)
 
         try await ModelScopeDownloader.downloadWeights(
             modelId: modelId,
             to: cacheDir,
             additionalFiles: [
                 "no_weights.safetensors",  // suppress default *.safetensors glob
-                "DeepFilterNet3.mlpackage/**",
+                // Pre-compiled CoreML — shipped by aufklarer/DeepFilterNet3-CoreML
+                // alongside the legacy .mlpackage. On-device compileModel() is
+                // known to drift per runtime (Mac vs simulator vs iPhone), so
+                // the goal is to never reach that code path for new installs.
+                "DeepFilterNet3.mlmodelc/**",
                 "auxiliary.npz",
             ],
+            offlineMode: offlineMode,
             progressHandler: { progress in
                 progressHandler?(progress * 0.8, "Downloading model...")
             }

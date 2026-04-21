@@ -29,8 +29,8 @@ public enum HuggingFaceDownloader {
     ///
     /// Returns the old flat cache path if it already contains model files (preserving
     /// ~10 GB of existing cached models), otherwise returns the new Hub-style path.
-    public static func getCacheDirectory(for modelId: String, cacheDirName: String = "qwen3-speech") throws -> URL {
-        let base = resolveBaseCacheDir(cacheDirName: cacheDirName)
+    public static func getCacheDirectory(for modelId: String, basePath: URL? = nil, cacheDirName: String = "qwen3-speech") throws -> URL {
+        let base = basePath ?? resolveBaseCacheDir(cacheDirName: cacheDirName)
         let fm = FileManager.default
 
         // Check old (flat) cache path for backward compat:
@@ -54,6 +54,7 @@ public enum HuggingFaceDownloader {
     /// Check if safetensors weights exist in a directory.
     public static func weightsExist(in directory: URL) -> Bool {
         let fm = FileManager.default
+        guard fm.fileExists(atPath: directory.path) else { return false }
         let contents: [URL]
         do {
             contents = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
@@ -77,8 +78,15 @@ public enum HuggingFaceDownloader {
         modelId: String,
         to directory: URL,
         additionalFiles: [String] = [],
+        offlineMode: Bool = false,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws {
+        // Skip network requests when weights are already cached
+        if offlineMode && weightsExist(in: directory) {
+            progressHandler?(1.0)
+            return
+        }
+
         var globs: [String] = ["config.json"]
 
         let hasExplicitWeights = additionalFiles.contains { $0.hasSuffix(".safetensors") }
@@ -98,13 +106,25 @@ public enum HuggingFaceDownloader {
         let hub = makeHubApi(for: modelId, repoDir: directory)
         let repo = Hub.Repo(id: modelId)
 
-        do {
-            try await hub.snapshot(from: repo, matching: globs) { progress in
-                progressHandler?(progress.fractionCompleted)
+        // Retry with exponential backoff — HuggingFace can timeout on
+        // slow connections or rate-limit. 3 attempts: 0s, 5s, 15s delays.
+        let maxRetries = 3
+        var lastError: Error?
+        for attempt in 1...maxRetries {
+            do {
+                try await hub.snapshot(from: repo, matching: globs) { progress in
+                    progressHandler?(progress.fractionCompleted)
+                }
+                return  // Success
+            } catch {
+                lastError = error
+                if attempt < maxRetries {
+                    let delay = attempt == 1 ? 5 : 15
+                    try await Task.sleep(for: .seconds(delay))
+                }
             }
-        } catch {
-            throw DownloadError.failedToDownload("\(modelId): \(error.localizedDescription)")
         }
+        throw DownloadError.failedToDownload("\(modelId): \(lastError?.localizedDescription ?? "unknown")")
     }
 
     // MARK: - Security Helpers (kept for backward compat + security tests)

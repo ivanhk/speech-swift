@@ -6,18 +6,19 @@ import AudioCommon
 ///
 /// Uses a FastConformer encoder with a Token-and-Duration Transducer (TDT) decoder.
 /// Mel preprocessing is done in Swift using Accelerate/vDSP. The encoder, decoder, and
-/// joint network run on CoreML with INT4-quantized encoder for Neural Engine acceleration.
+/// joint network run on CoreML with INT8-quantized encoder for Neural Engine acceleration.
 ///
 /// - Warning: This class is not thread-safe. Create separate instances for concurrent use.
 public class ParakeetASRModel {
     /// Model configuration.
     public let config: ParakeetConfig
 
-    /// Default HuggingFace model ID (INT4 quantized encoder).
-    public static let defaultModelId = "aufklarer/Parakeet-TDT-v3-CoreML-INT4"
+    /// Default HuggingFace model ID (INT8 quantized encoder, 30s max).
+    public static let defaultModelId = "aufklarer/Parakeet-TDT-v3-CoreML-INT8"
 
-    /// INT8 quantized variant (higher accuracy, larger size).
-    public static let int8ModelId = "aufklarer/Parakeet-TDT-v3-CoreML-INT8"
+    /// iOS-optimized model: single 500-frame shape (5s max), no EnumeratedShapes overhead.
+    /// Saves ~600MB runtime memory vs the default model.
+    public static let iosModelId = "aufklarer/Parakeet-TDT-v3-CoreML-INT8-iOS-5s"
 
     /// Whether the model is loaded and ready for inference.
     var _isLoaded = true
@@ -29,6 +30,8 @@ public class ParakeetASRModel {
     private let vocabulary: ParakeetVocabulary
     /// Confidence from the last transcription (0.0–1.0).
     public private(set) var lastConfidence: Float = 0
+    /// Per-word confidence scores from the last transcription.
+    public private(set) var lastWordConfidences: [WordConfidence]?
 
     private init(
         config: ParakeetConfig,
@@ -96,12 +99,13 @@ public class ParakeetASRModel {
         // Step 3: TDT greedy decode
         let tdtDecoder = TDTGreedyDecoder(config: config, decoder: decoder!, joint: joint!)
         let tDec0 = CFAbsoluteTimeGetCurrent()
-        let (tokenIds, confidence) = try tdtDecoder.decode(encoded: encoded, encodedLength: encodedLength)
+        let (tokenIds, tokenLogProbs, confidence) = try tdtDecoder.decode(encoded: encoded, encodedLength: encodedLength)
         let tDec1 = CFAbsoluteTimeGetCurrent()
 
-        // Step 4: Vocabulary decode
+        // Step 4: Vocabulary decode with per-word confidence
         let text = vocabulary.decode(tokenIds)
         lastConfidence = confidence
+        lastWordConfidences = vocabulary.decodeWords(tokenIds, logProbs: tokenLogProbs)
 
         let melMs = (tMel1 - tMel0) * 1000
         let encMs = (tEnc1 - tEnc0) * 1000
@@ -172,45 +176,59 @@ public class ParakeetASRModel {
     ///   - progressHandler: Optional callback for download/load progress `(fraction, status)`
     /// - Returns: Initialized model ready for transcription
     public static func fromPretrained(
-        modelId: String = defaultModelId,
+        modelId: String? = nil,
+        cacheDir: URL? = nil,
+        offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> ParakeetASRModel {
-        AudioLog.modelLoading.info("Loading Parakeet model: \(modelId)")
+        let effectiveModelId: String
+        if let modelId {
+            effectiveModelId = modelId
+        } else {
+            #if os(iOS)
+            effectiveModelId = iosModelId
+            #else
+            effectiveModelId = defaultModelId
+            #endif
+        }
+
+        AudioLog.modelLoading.info("Loading Parakeet model: \(effectiveModelId)")
 
         // Step 1: Get/create cache directory
-        let cacheDir: URL
+        let resolvedCacheDir: URL
         do {
-            cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
+            resolvedCacheDir = try cacheDir ?? HuggingFaceDownloader.getCacheDirectory(for: effectiveModelId)
         } catch {
             throw AudioModelError.modelLoadFailed(
-                modelId: modelId, reason: "Failed to resolve cache directory", underlying: error)
+                modelId: effectiveModelId, reason: "Failed to resolve cache directory", underlying: error)
         }
 
         // Step 2: Download model files (no preprocessor needed — mel is computed in Swift)
         progressHandler?(0.0, "Downloading model...")
         do {
             try await ModelScopeDownloader.downloadWeights(
-                modelId: modelId,
-                to: cacheDir,
+                modelId: effectiveModelId,
+                to: resolvedCacheDir,
                 additionalFiles: [
                     "encoder.mlmodelc/**",
                     "decoder.mlmodelc/**",
                     "joint.mlmodelc/**",
                     "vocab.json",
                     "config.json",
-                ]
+                ],
+                offlineMode: offlineMode
             ) { fraction in
                 progressHandler?(fraction * 0.7, "Downloading model...")
             }
         } catch {
             throw AudioModelError.modelLoadFailed(
-                modelId: modelId, reason: "Download failed", underlying: error)
+                modelId: effectiveModelId, reason: "Download failed", underlying: error)
         }
 
         // Step 3: Load config
         progressHandler?(0.70, "Loading configuration...")
         let config: ParakeetConfig
-        let configURL = cacheDir.appendingPathComponent("config.json")
+        let configURL = resolvedCacheDir.appendingPathComponent("config.json")
         if FileManager.default.fileExists(atPath: configURL.path) {
             let data = try Data(contentsOf: configURL)
             config = try JSONDecoder().decode(ParakeetConfig.self, from: data)
@@ -222,26 +240,28 @@ public class ParakeetASRModel {
 
         // Step 4: Load vocabulary
         progressHandler?(0.75, "Loading vocabulary...")
-        let vocabURL = cacheDir.appendingPathComponent("vocab.json")
+        let vocabURL = resolvedCacheDir.appendingPathComponent("vocab.json")
         let vocabulary: ParakeetVocabulary
         do {
             vocabulary = try ParakeetVocabulary.load(from: vocabURL)
             AudioLog.modelLoading.debug("Loaded vocabulary: \(vocabulary.count) tokens")
         } catch {
             throw AudioModelError.modelLoadFailed(
-                modelId: modelId, reason: "Failed to load vocabulary", underlying: error)
+                modelId: effectiveModelId, reason: "Failed to load vocabulary", underlying: error)
         }
 
         // Step 5: Load CoreML models (encoder, decoder, joint — no preprocessor)
         progressHandler?(0.80, "Loading CoreML models...")
+        // Use cpuAndGPU for encoder — ANE compilation fails on some devices
+        // (iPhone 17 Pro "Unknown aneSubType") causing memory spike + fallback anyway
         let encoder = try loadCoreMLModel(
-            name: "encoder", from: cacheDir, computeUnits: .all)
+            name: "encoder", from: resolvedCacheDir, computeUnits: .cpuAndGPU)
         progressHandler?(0.90, "Loading decoder...")
         let decoder = try loadCoreMLModel(
-            name: "decoder", from: cacheDir, computeUnits: .cpuAndNeuralEngine)
+            name: "decoder", from: resolvedCacheDir, computeUnits: .cpuAndGPU)
         progressHandler?(0.95, "Loading joint network...")
         let joint = try loadCoreMLModel(
-            name: "joint", from: cacheDir, computeUnits: .cpuAndNeuralEngine)
+            name: "joint", from: resolvedCacheDir, computeUnits: .cpuAndGPU)
 
         progressHandler?(1.0, "Model loaded")
         AudioLog.modelLoading.info("Parakeet model loaded successfully")

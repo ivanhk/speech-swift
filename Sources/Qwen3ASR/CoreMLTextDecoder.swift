@@ -13,7 +13,6 @@ import AudioCommon
 /// The decoder consists of two CoreML models:
 ///   - **embedding**: Token ID → embedding vector lookup
 ///   - **decoder**: Embedding → logits, with 56 KV cache states (28 layers × 2)
-@available(macOS 15, iOS 18, *)
 public class CoreMLTextDecoder {
     private let embeddingModel: MLModel
     private let decoderModel: MLModel
@@ -64,7 +63,7 @@ public class CoreMLTextDecoder {
             hiddenSize = json["hidden_size"] as? Int ?? 1024
         }
 
-        // Try compiled first, then mlpackage
+        // Only pre-compiled ``.mlmodelc`` is supported (see ``findModel``).
         let embURL = findModel(named: "embedding", in: directory)
         let decURL = findModel(named: "decoder", in: directory)
 
@@ -95,9 +94,11 @@ public class CoreMLTextDecoder {
     public static func fromPretrained(
         modelId: String = defaultModelId,
         computeUnits: MLComputeUnits = .all,
+        cacheDir: URL? = nil,
+        offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> CoreMLTextDecoder {
-        let cacheDir = try ModelScopeDownloader.getCacheDirectory(for: modelId)
+        let cacheDir = try cacheDir ?? HuggingFaceDownloader.getCacheDirectory(for: modelId)
 
         progressHandler?(0.0, "Downloading CoreML decoder...")
         try await ModelScopeDownloader.downloadWeights(
@@ -107,7 +108,8 @@ public class CoreMLTextDecoder {
                 "embedding.mlmodelc/**",
                 "decoder.mlmodelc/**",
                 "config.json",
-            ]
+            ],
+            offlineMode: offlineMode
         ) { fraction in
             progressHandler?(fraction * 0.8, "Downloading CoreML decoder...")
         }
@@ -292,13 +294,12 @@ public class CoreMLTextDecoder {
     // MARK: - Helpers
 
     private static func findModel(named name: String, in directory: URL) -> URL? {
+        // Only pre-compiled ``.mlmodelc`` is supported — on-device
+        // ``MLModel.compileModel`` drifts per runtime, and the published
+        // ``aufklarer/Qwen3-ASR-CoreML`` repo ships compiled bundles only.
         let compiled = directory.appendingPathComponent("\(name).mlmodelc", isDirectory: true)
         if FileManager.default.fileExists(atPath: compiled.path) {
             return compiled
-        }
-        let pkg = directory.appendingPathComponent("\(name).mlpackage", isDirectory: true)
-        if FileManager.default.fileExists(atPath: pkg.path) {
-            return pkg
         }
         return nil
     }

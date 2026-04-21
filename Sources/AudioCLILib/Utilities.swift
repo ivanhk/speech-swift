@@ -23,7 +23,13 @@ public func runAsync(_ block: @escaping () async throws -> Void) throws {
 }
 
 /// Git commit hash baked in at build time, or read from .git at runtime.
+///
+/// ``Process`` isn't available on iOS and the rest of Apple's embedded
+/// platforms, so the CLI-only git probe is gated on macOS. iOS-bound targets
+/// (libraries sharing this module via ``runAsync`` / ``reportProgress``)
+/// still compile cleanly and just see ``"unknown"``.
 public let buildVersion: String = {
+    #if os(macOS)
     let pipe = Pipe()
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
@@ -43,6 +49,9 @@ public let buildVersion: String = {
         }
     } catch {}
     return "unknown"
+    #else
+    return "unknown"
+    #endif
 }()
 
 /// Print model loading progress in a consistent format.

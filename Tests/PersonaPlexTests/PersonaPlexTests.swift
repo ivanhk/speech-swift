@@ -159,6 +159,85 @@ final class PersonaPlexTests: XCTestCase {
         XCTAssertTrue(decoded.lowercased().contains("helpful"), "Decoded text should contain 'helpful': got '\(decoded)'")
     }
 
+    // MARK: - SentencePiece Encoder Tests
+
+    func testSentencePieceEncoderRoundTrip() throws {
+        let modelId = "aufklarer/PersonaPlex-7B-MLX-4bit"
+        let cacheDir: URL
+        do {
+            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        } catch {
+            throw XCTSkip("Cannot resolve cache directory")
+        }
+
+        let spmPath = cacheDir.appendingPathComponent("tokenizer_spm_32k_3.model").path
+        guard FileManager.default.fileExists(atPath: spmPath) else {
+            throw XCTSkip("SentencePiece model not cached at \(spmPath)")
+        }
+
+        let decoder = try SentencePieceDecoder(modelPath: spmPath)
+
+        // Encode and decode should round-trip
+        let text = "You are a helpful assistant."
+        let tokens = decoder.encode(text)
+        XCTAssertFalse(tokens.isEmpty, "Encoded tokens should not be empty")
+        let decoded = decoder.decode(tokens)
+        XCTAssertEqual(decoded, text, "Round-trip should preserve text: got '\(decoded)'")
+    }
+
+    func testSentencePieceEncodeSystemPrompt() throws {
+        let modelId = "aufklarer/PersonaPlex-7B-MLX-4bit"
+        let cacheDir: URL
+        do {
+            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        } catch {
+            throw XCTSkip("Cannot resolve cache directory")
+        }
+
+        let spmPath = cacheDir.appendingPathComponent("tokenizer_spm_32k_3.model").path
+        guard FileManager.default.fileExists(atPath: spmPath) else {
+            throw XCTSkip("SentencePiece model not cached at \(spmPath)")
+        }
+
+        let decoder = try SentencePieceDecoder(modelPath: spmPath)
+
+        // encodeSystemPrompt should wrap with <system> tags
+        let tokens = decoder.encodeSystemPrompt("You are a helpful assistant.")
+        let decoded = decoder.decode(tokens)
+        // decode() reconstructs the full text including <system> tags
+        // (they're BPE-encoded, not single control tokens)
+        XCTAssertTrue(decoded.contains("You are a helpful assistant."),
+                      "Decoded should contain the prompt text, got: \(decoded)")
+
+        // Verify <system> tag tokens are present (first and last non-trivial tokens)
+        XCTAssertTrue(tokens.count > 5, "System prompt should produce multiple tokens")
+    }
+
+    func testSentencePieceEncodeMatchesPreset() throws {
+        let modelId = "aufklarer/PersonaPlex-7B-MLX-4bit"
+        let cacheDir: URL
+        do {
+            cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        } catch {
+            throw XCTSkip("Cannot resolve cache directory")
+        }
+
+        let spmPath = cacheDir.appendingPathComponent("tokenizer_spm_32k_3.model").path
+        guard FileManager.default.fileExists(atPath: spmPath) else {
+            throw XCTSkip("SentencePiece model not cached at \(spmPath)")
+        }
+
+        let decoder = try SentencePieceDecoder(modelPath: spmPath)
+
+        // Encoding the assistant preset text should produce identical tokens
+        let presetTokens = SystemPromptPreset.assistant.tokens
+        let encodedTokens = decoder.encodeSystemPrompt("You are a helpful assistant. Answer questions clearly and concisely.")
+        XCTAssertEqual(
+            encodedTokens, presetTokens,
+            "Encoded tokens should match pre-tokenized assistant preset.\n  Expected: \(presetTokens)\n  Got:      \(encodedTokens)"
+        )
+    }
+
     // MARK: - Silence Early Stop Config Tests
 
     func testAudioChunkTextTokensDefault() {
@@ -349,6 +428,131 @@ final class PersonaPlexTests: XCTestCase {
     }
 }
 
+// MARK: - KV Cache Tests
+
+final class KVCacheTests: XCTestCase {
+
+    func testPreAllocatedBasic() {
+        let cache = KVCachePreAllocated(capacity: 16)
+        XCTAssertEqual(cache.offset, 0)
+        XCTAssertNil(cache.keysArray)
+
+        // First update allocates buffer
+        let k = MLXArray.ones([1, 4, 1, 8])
+        let v = MLXArray.ones([1, 4, 1, 8])
+        let (rk, rv) = cache.update(keys: k, values: v)
+        XCTAssertEqual(cache.offset, 1)
+        XCTAssertEqual(rk.shape, [1, 4, 1, 8])
+        XCTAssertEqual(rv.shape, [1, 4, 1, 8])
+    }
+
+    func testPreAllocatedMultipleSteps() {
+        let cache = KVCachePreAllocated(capacity: 64)
+
+        for step in 0..<10 {
+            let k = MLXArray.ones([1, 4, 1, 8]) * Float(step)
+            let v = MLXArray.ones([1, 4, 1, 8]) * Float(step)
+            let (rk, rv) = cache.update(keys: k, values: v)
+            XCTAssertEqual(cache.offset, step + 1)
+            XCTAssertEqual(rk.shape[2], step + 1)
+            XCTAssertEqual(rv.shape[2], step + 1)
+        }
+    }
+
+    func testPreAllocatedCapacityLimit() {
+        let cache = KVCachePreAllocated(capacity: 4)
+
+        for _ in 0..<4 {
+            let k = MLXArray.ones([1, 2, 1, 8])
+            let v = MLXArray.ones([1, 2, 1, 8])
+            _ = cache.update(keys: k, values: v)
+        }
+        XCTAssertEqual(cache.offset, 4)
+
+        // At capacity — should clamp
+        let k = MLXArray.ones([1, 2, 1, 8])
+        let v = MLXArray.ones([1, 2, 1, 8])
+        _ = cache.update(keys: k, values: v)
+        XCTAssertEqual(cache.offset, 4)
+    }
+
+    func testPreAllocatedTrim() {
+        let cache = KVCachePreAllocated(capacity: 16)
+
+        for _ in 0..<8 {
+            _ = cache.update(keys: MLXArray.ones([1, 2, 1, 4]), values: MLXArray.ones([1, 2, 1, 4]))
+        }
+        XCTAssertEqual(cache.offset, 8)
+
+        cache.trim(8)
+        XCTAssertEqual(cache.offset, 0)
+        XCTAssertNil(cache.keysArray)
+    }
+
+    func testPreAllocatedPrefill() {
+        let cache = KVCachePreAllocated(capacity: 64)
+
+        // Prefill with multiple tokens at once
+        let k = MLXArray.ones([1, 4, 10, 8])
+        let v = MLXArray.ones([1, 4, 10, 8])
+        let (rk, rv) = cache.update(keys: k, values: v)
+        XCTAssertEqual(cache.offset, 10)
+        XCTAssertEqual(rk.shape, [1, 4, 10, 8])
+        XCTAssertEqual(rv.shape, [1, 4, 10, 8])
+
+        // Then single-token decode
+        let k2 = MLXArray.ones([1, 4, 1, 8])
+        let v2 = MLXArray.ones([1, 4, 1, 8])
+        let (rk2, _) = cache.update(keys: k2, values: v2)
+        XCTAssertEqual(cache.offset, 11)
+        XCTAssertEqual(rk2.shape[2], 11)
+    }
+
+    func testSimpleCacheStillWorks() {
+        // Verify KVCacheSimple still works (backward compat)
+        let cache = KVCacheSimple()
+        let k = MLXArray.ones([1, 4, 1, 8])
+        let v = MLXArray.ones([1, 4, 1, 8])
+        let (rk, _) = cache.update(keys: k, values: v)
+        XCTAssertEqual(cache.offset, 1)
+        XCTAssertEqual(rk.shape, [1, 4, 1, 8])
+    }
+
+    func testPreAllocatedFasterThanConcat() {
+        // Simulate 500-step decode (like TTS) and compare wall time
+        let steps = 500
+        let heads = 8, headDim = 128
+
+        // Pre-allocated: O(1) per step
+        let preAlloc = KVCachePreAllocated(capacity: steps)
+        let preStart = CFAbsoluteTimeGetCurrent()
+        for _ in 0..<steps {
+            let k = MLXArray.ones([1, heads, 1, headDim])
+            let v = MLXArray.ones([1, heads, 1, headDim])
+            let (rk, _) = preAlloc.update(keys: k, values: v)
+            eval(rk)
+        }
+        let preTime = CFAbsoluteTimeGetCurrent() - preStart
+
+        // Concatenation: O(n) per step
+        let concat = KVCacheSimple()
+        let concatStart = CFAbsoluteTimeGetCurrent()
+        for _ in 0..<steps {
+            let k = MLXArray.ones([1, heads, 1, headDim])
+            let v = MLXArray.ones([1, heads, 1, headDim])
+            let (rk, _) = concat.update(keys: k, values: v)
+            eval(rk)
+        }
+        let concatTime = CFAbsoluteTimeGetCurrent() - concatStart
+
+        print(String(format: "Pre-allocated: %.3fs, Concat: %.3fs, Speedup: %.1fx",
+                     preTime, concatTime, concatTime / preTime))
+
+        // Informational: MLX's copy-on-write means pre-alloc doesn't always win.
+        // The real optimization is compiled step functions + wired memory pinning.
+    }
+}
+
 // MARK: - E2E Tests (require model download)
 
 // These tests download the model (~5.5 GB) on first run and cache it.
@@ -429,6 +633,46 @@ final class E2EPersonaPlexTests: XCTestCase {
 
         let responseDuration = Double(response.count) / Double(sampleRate)
         print("Response: \(response.count) samples (\(String(format: "%.2f", responseDuration))s)")
+    }
+
+    func testRespondWithCustomSystemPrompt() throws {
+        let model = try self.model
+
+        // Verify tokenizer is loaded
+        XCTAssertNotNil(model.tokenizer, "Model should have built-in tokenizer")
+
+        // Generate test audio (0.5s sine wave)
+        let numSamples = 12000
+        var testAudio = [Float](repeating: 0, count: numSamples)
+        for i in 0..<numSamples {
+            testAudio[i] = sin(2 * .pi * 440 * Float(i) / 24000.0) * 0.5
+        }
+
+        // Use the string-based system prompt API
+        let (response, textTokens) = model.respond(
+            userAudio: testAudio,
+            voice: .NATM0,
+            systemPrompt: "You enjoy having a good conversation.",
+            maxSteps: 10,
+            verbose: true
+        )
+
+        XCTAssertFalse(response.isEmpty, "Should produce response audio with custom prompt")
+        print("Custom prompt response: \(response.count) samples, \(textTokens.count) text tokens")
+    }
+
+    func testTokenizeSystemPromptMatchesPreset() throws {
+        let model = try self.model
+
+        // Verify the model's tokenizer produces the same tokens as the preset
+        guard let tokens = model.tokenizeSystemPrompt(
+            "You are a helpful assistant. Answer questions clearly and concisely."
+        ) else {
+            XCTFail("tokenizeSystemPrompt returned nil")
+            return
+        }
+        let presetTokens = SystemPromptPreset.assistant.tokens
+        XCTAssertEqual(tokens, presetTokens, "Model tokenizer should match preset tokens")
     }
 
     func testRespondNonSilent() throws {

@@ -208,23 +208,24 @@ final class DownloadSecurityTests: XCTestCase {
         let legacyKey = modelId.replacingOccurrences(of: "/", with: "_")
         XCTAssertEqual(key, legacyKey, "New sanitized key should match legacy format for standard model IDs")
 
-        // Check the cached directory actually exists if model was downloaded
-        let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("qwen3-asr")
-            .appendingPathComponent(key)
-        if FileManager.default.fileExists(atPath: cacheDir.path) {
-            // Verify expected files are present
-            let vocabPath = cacheDir.appendingPathComponent("vocab.json")
-            XCTAssertTrue(FileManager.default.fileExists(atPath: vocabPath.path), "vocab.json should exist in cache")
+        // Resolve the actual cache directory via the downloader (handles both
+        // legacy flat layout and the current Hub-style nested layout).
+        // Note: getCacheDirectory creates the dir as a side effect, so check
+        // for vocab.json — not just dir existence — to detect a real cache.
+        let cacheDir = try HuggingFaceDownloader.getCacheDirectory(for: modelId)
+        let vocabPath = cacheDir.appendingPathComponent("vocab.json")
+        if FileManager.default.fileExists(atPath: vocabPath.path) {
 
             // Verify tokenizer loads from the cached path
             let tokenizer = Qwen3Tokenizer()
             try tokenizer.load(from: vocabPath)
             XCTAssertEqual(tokenizer.getTokenId(for: "<|im_start|>"), 151644)
 
-            // Verify file validation passes on real cached files
+            // Verify file validation passes on real cached files. Skip hidden
+            // entries like HuggingFace Hub's `.cache/` metadata directory —
+            // those are local bookkeeping, not downloaded artifacts.
             let contents = try FileManager.default.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: nil)
-            for file in contents {
+            for file in contents where !file.lastPathComponent.hasPrefix(".") {
                 let name = file.lastPathComponent
                 XCTAssertNoThrow(try Qwen3ASRModel.validatedRemoteFileName(name),
                     "Cached file '\(name)' should pass validation")
@@ -339,6 +340,11 @@ final class DownloadSecurityTests: XCTestCase {
 
 // MARK: - Metallib Build Script Tests
 
+// ``MetallibScriptTests`` drives a bash script via ``Process``. ``Process``
+// is not available on iOS / iOS Simulator (it lives in Foundation's
+// macOS/Linux branch), so gate the suite on macOS to keep iOS sim builds
+// green.
+#if os(macOS)
 final class MetallibScriptTests: XCTestCase {
 
     func testScriptExists() {
@@ -392,3 +398,4 @@ final class MetallibScriptTests: XCTestCase {
         XCTAssertTrue(content.contains("set -euo pipefail"), "Script should use strict mode")
     }
 }
+#endif

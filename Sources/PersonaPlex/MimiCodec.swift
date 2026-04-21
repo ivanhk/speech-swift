@@ -20,8 +20,8 @@ public final class Mimi: Module {
     @ModuleInfo public var downsample: ConvDownsample1d
     @ModuleInfo public var upsample: ConvTrUpsample1d
 
-    public private(set) var encoderCache: [KVCacheSimple]
-    public private(set) var decoderCache: [KVCacheSimple]
+    public private(set) var encoderCache: [any KVCache]
+    public private(set) var decoderCache: [any KVCache]
 
     private let downsampleStride: Int
 
@@ -216,20 +216,23 @@ public extension Mimi {
         repoId: String = "kyutai/moshiko-pytorch-bf16",
         filename: String = "tokenizer-e351c8d8-checkpoint125.safetensors",
         numCodebooks: Int = 16,
+        cacheDir: URL? = nil,
+        offlineMode: Bool = false,
         progressHandler: ((Double, String) -> Void)? = nil
     ) async throws -> Mimi {
         let cfg = MimiConfig.moshiko(numCodebooks: numCodebooks)
         let model = Mimi(cfg: cfg)
 
         progressHandler?(0.1, "Downloading Mimi codec...")
-        let mimiDir = try ModelScopeDownloader.getCacheDirectory(for: repoId)
+        let mimiDir = try cacheDir ?? HuggingFaceDownloader.getCacheDirectory(for: repoId)
         let weightFile = mimiDir.appendingPathComponent(filename)
 
         if !FileManager.default.fileExists(atPath: weightFile.path) {
             try await ModelScopeDownloader.downloadWeights(
                 modelId: repoId,
                 to: mimiDir,
-                additionalFiles: [filename]
+                additionalFiles: [filename],
+                offlineMode: offlineMode
             )
         }
 
