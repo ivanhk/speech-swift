@@ -140,7 +140,7 @@ public enum TextPreprocessor {
 
     private static func splitChineseWords(_ text: String) -> [String] {
         let nsText = text as NSString
-        let locale = CFLocaleCreate(nil, "zh" as CFString)
+        let locale = Locale(identifier: "zh") as CFLocale
         let tokenizer = CFStringTokenizerCreate(
             nil,
             nsText,
@@ -154,7 +154,7 @@ public enum TextPreprocessor {
         while result.rawValue != 0 {
             let range = CFStringTokenizerGetCurrentTokenRange(tokenizer)
             let token = nsText.substring(with: NSRange(location: range.location, length: range.length))
-            let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmed = token.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
             if !trimmed.isEmpty, !trimmed.allSatisfy(isDelimiter) {
                 words.append(trimmed)
             }

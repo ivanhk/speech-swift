@@ -207,9 +207,23 @@ final class CamPlusPlusMelExtractor {
             let invFrames = 1.0 / Float(nFrames)
             vDSP_vsmul(binMeans, 1, [invFrames], &binMeans, 1, vDSP_Length(nMels))
 
-            for frame in 0..<nFrames {
-                let base = frame * nMels
-                vDSP_vsub(binMeans, 1, &melSpec + base, 1, &melSpec + base, 1, vDSP_Length(nMels))
+            binMeans.withUnsafeBufferPointer { meansPtr in
+                melSpec.withUnsafeMutableBufferPointer { melSpecPtr in
+                    guard let meansBase = meansPtr.baseAddress,
+                          let melBase = melSpecPtr.baseAddress else { return }
+                    for frame in 0..<nFrames {
+                        let base = frame * nMels
+                        vDSP_vsub(
+                            meansBase,
+                            1,
+                            melBase + base,
+                            1,
+                            melBase + base,
+                            1,
+                            vDSP_Length(nMels)
+                        )
+                    }
+                }
             }
         }
 

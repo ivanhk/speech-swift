@@ -48,7 +48,6 @@ public final class MimiAttention: Module {
     public func callAsFunction(_ xs: MLXArray, cache: KVCache) -> MLXArray {
         let b = xs.shape[0]
         let t = xs.shape[1]
-        let hd = xs.shape[2]
 
         let qkv = in_proj(xs).reshaped([b, t, 3, cfg.numHeads, cfg.headDim])
 

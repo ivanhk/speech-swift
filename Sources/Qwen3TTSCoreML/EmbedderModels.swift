@@ -99,11 +99,6 @@ func ensureNCHW(_ array: MLMultiArray, channels: Int) -> MLMultiArray {
     let result = try! MLMultiArray(shape: [1, NSNumber(value: channels), 1, 1], dataType: .float16)
     let dst = result.dataPointer.assumingMemoryBound(to: Float16.self)
 
-    // Check if strides indicate non-contiguous layout
-    let strides = array.strides.map { $0.intValue }
-    let isContiguous = strides.last == 1 && (strides.count < 2 || strides[strides.count - 2] <= 1
-        || (strides.count >= 1 && strides[0] == 1))
-
     // CoreML outputs may have non-unit strides (SIMD alignment).
     // Use MLMultiArray subscript for correct strided access.
     let shape = array.shape.map { $0.intValue }
