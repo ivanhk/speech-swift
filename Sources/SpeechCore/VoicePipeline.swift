@@ -425,6 +425,7 @@ public final class VoicePipeline {
                 // Single TTS call for the full text — consistent voice, no
                 // chunk boundary artifacts (with noChunking streaming config).
                 let sem = DispatchSemaphore(value: 0)
+                let chunkCtxBits = chunkCtx.map { UInt(bitPattern: $0) }
                 DispatchQueue.global(qos: .userInitiated).async {
                     let group = DispatchGroup()
                     group.enter()
@@ -437,16 +438,19 @@ public final class VoicePipeline {
                             for try await chunk in stream {
                                 guard !bridge.cancelled else { break }
                                 let isFinal = chunk.isFinal
+                                let callbackCtx = chunkCtxBits.flatMap { UnsafeMutableRawPointer(bitPattern: $0) }
                                 chunk.samples.withUnsafeBufferPointer { buf in
-                                    onChunk?(buf.baseAddress, buf.count, isFinal, chunkCtx)
+                                    onChunk?(buf.baseAddress, buf.count, isFinal, callbackCtx)
                                 }
                                 if isFinal { sentFinal = true; break }
                             }
                             if !sentFinal && !bridge.cancelled {
-                                onChunk?(nil, 0, true, chunkCtx)
+                                let callbackCtx = chunkCtxBits.flatMap { UnsafeMutableRawPointer(bitPattern: $0) }
+                                onChunk?(nil, 0, true, callbackCtx)
                             }
                         } catch {
-                            onChunk?(nil, 0, true, chunkCtx)
+                            let callbackCtx = chunkCtxBits.flatMap { UnsafeMutableRawPointer(bitPattern: $0) }
+                            onChunk?(nil, 0, true, callbackCtx)
                         }
                     }
                     group.wait()

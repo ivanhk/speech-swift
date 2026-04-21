@@ -22,4 +22,35 @@ final class ModelScopeDownloaderTests: XCTestCase {
         XCTAssertEqual(components.queryItems?.first(where: { $0.name == "Revision" })?.value, "master")
         XCTAssertEqual(components.queryItems?.first(where: { $0.name == "FilePath" })?.value, "tokenizer.json")
     }
+
+    func testOfflineModeReturnsImmediatelyWhenWeightsExist() async throws {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        FileManager.default.createFile(
+            atPath: tempDir.appendingPathComponent("model.safetensors").path,
+            contents: Data()
+        )
+
+        var reportedProgress: Double?
+        try await ModelScopeDownloader.downloadWeights(
+            modelId: "org/offline-model",
+            to: tempDir,
+            offlineMode: true,
+            progressHandler: { reportedProgress = $0 }
+        )
+
+        XCTAssertEqual(reportedProgress, 1.0)
+    }
+
+    func testGlobPatternsMatchNestedModelScopeFiles() {
+        XCTAssertTrue(ModelScopeDownloader.matches(filePath: "voices/af_heart.json", pattern: "voices/*.json"))
+        XCTAssertTrue(ModelScopeDownloader.matches(
+            filePath: "kokoro_21_5s.mlmodelc/Data/com.apple.CoreML/model.mil",
+            pattern: "kokoro_21_5s.mlmodelc/**"
+        ))
+        XCTAssertFalse(ModelScopeDownloader.matches(filePath: "voices/af_heart.bin", pattern: "voices/*.json"))
+    }
 }

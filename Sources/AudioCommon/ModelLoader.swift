@@ -2,7 +2,11 @@ import Foundation
 import os
 
 /// Loaded model set — holds references to all loaded models.
-public struct ModelSet: Sendable {
+///
+/// The contained model protocols are class-bound and may encapsulate CoreML /
+/// MLX runtime state, so we treat cross-actor transfer as a caller-managed
+/// responsibility rather than forcing every model protocol to be `Sendable`.
+public struct ModelSet: @unchecked Sendable {
     public let vad: (any StreamingVADProvider)?
     public let stt: (any SpeechRecognitionModel)?
     public let tts: (any SpeechGenerationModel)?
@@ -120,7 +124,7 @@ public enum ModelLoader {
         var stt: (any SpeechRecognitionModel)?
         var tts: (any SpeechGenerationModel)?
 
-        for (name, model) in results {
+        for (_, model) in results {
             if let m = model as? any StreamingVADProvider { vad = m }
             if let m = model as? any SpeechRecognitionModel { stt = m }
             if let m = model as? any SpeechGenerationModel { tts = m }

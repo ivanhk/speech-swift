@@ -37,26 +37,21 @@ public enum ModelScopeDownloader {
         modelId: String,
         to directory: URL,
         additionalFiles: [String] = [],
+        offlineMode: Bool = false,
         progressHandler: ((Double) -> Void)? = nil
     ) async throws {
+        if offlineMode && requestedFilesExist(in: directory, additionalFiles: additionalFiles) {
+            progressHandler?(1.0)
+            return
+        }
+
         let filesToDownload = try await listModelFiles(modelId: modelId)
 
-        var filesNeeded: Set<String> = ["config.json"]
-        let hasExplicitWeights = additionalFiles.contains { $0.hasSuffix(".safetensors") }
-        if !hasExplicitWeights {
-            for file in filesToDownload where file.hasSuffix(".safetensors") {
-                filesNeeded.insert(file)
-            }
-            if filesToDownload.contains("model.safetensors.index.json") {
-                filesNeeded.insert("model.safetensors.index.json")
-            }
+        let patterns = requestedPatterns(additionalFiles: additionalFiles)
+        let filteredFiles = filesToDownload.filter { filePath in
+            patterns.contains { matches(filePath: filePath, pattern: $0) }
         }
-        for file in additionalFiles {
-            filesNeeded.insert(file)
-        }
-
-        let filteredFiles = filesToDownload.filter { filesNeeded.contains($0) }
-        let totalFiles = filteredFiles.count
+        let totalFiles = max(filteredFiles.count, 1)
         var completedFiles = 0
 
         for file in filteredFiles {
@@ -71,6 +66,14 @@ public enum ModelScopeDownloader {
             completedFiles += 1
             progressHandler?(Double(completedFiles) / Double(totalFiles))
         }
+    }
+
+    static func matches(filePath: String, pattern: String) -> Bool {
+        guard let regex = try? NSRegularExpression(pattern: globPatternToRegex(pattern)) else {
+            return filePath == pattern
+        }
+        let range = NSRange(filePath.startIndex..<filePath.endIndex, in: filePath)
+        return regex.firstMatch(in: filePath, range: range) != nil
     }
 
     public static func sanitizedCacheKey(for modelId: String) -> String {
@@ -131,6 +134,77 @@ public enum ModelScopeDownloader {
             root = fm.urls(for: .cachesDirectory, in: .userDomainMask).first!
         }
         return root.appendingPathComponent(cacheDirName, isDirectory: true)
+    }
+
+    private static func requestedPatterns(additionalFiles: [String]) -> [String] {
+        var patterns: [String] = ["config.json"]
+        let hasExplicitWeights = additionalFiles.contains { $0.hasSuffix(".safetensors") }
+        if !hasExplicitWeights {
+            patterns.append("*.safetensors")
+            patterns.append("model.safetensors.index.json")
+        }
+        for file in additionalFiles where !patterns.contains(file) {
+            patterns.append(file)
+        }
+        return patterns
+    }
+
+    private static func requestedFilesExist(in directory: URL, additionalFiles: [String]) -> Bool {
+        let localFiles = listRelativeFiles(in: directory)
+        let patterns = requestedPatterns(additionalFiles: additionalFiles)
+        return patterns.allSatisfy { pattern in
+            localFiles.contains { matches(filePath: $0, pattern: pattern) }
+        }
+    }
+
+    private static func listRelativeFiles(in directory: URL) -> [String] {
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+
+        var files: [String] = []
+        while let fileURL = enumerator.nextObject() as? URL {
+            guard let values = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
+                  values.isRegularFile == true else {
+                continue
+            }
+            files.append(fileURL.path.replacingOccurrences(of: directory.path + "/", with: ""))
+        }
+        return files
+    }
+
+    private static func globPatternToRegex(_ pattern: String) -> String {
+        var regex = "^"
+        var index = pattern.startIndex
+
+        while index < pattern.endIndex {
+            let char = pattern[index]
+            let nextIndex = pattern.index(after: index)
+
+            if char == "*" {
+                if nextIndex < pattern.endIndex && pattern[nextIndex] == "*" {
+                    regex += ".*"
+                    index = pattern.index(after: nextIndex)
+                } else {
+                    regex += "[^/]*"
+                    index = nextIndex
+                }
+                continue
+            }
+
+            if ".+?^${}()|[]\\".contains(char) {
+                regex += "\\"
+            }
+            regex.append(char)
+            index = nextIndex
+        }
+
+        regex += "$"
+        return regex
     }
 
     private static func listModelFiles(modelId: String) async throws -> [String] {
