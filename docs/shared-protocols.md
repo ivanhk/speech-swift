@@ -74,6 +74,8 @@ public protocol ForcedAlignmentModel: AnyObject {
 
 **Conforming types:** `Qwen3ForcedAligner`
 
+The public protocol remains unit-level. CLI conveniences such as `audio align --sentence-level` are implemented as post-processing on top of the returned `[AlignedWord]` array rather than as a new protocol shape.
+
 ### SpeechToSpeechModel
 
 Speech-to-speech models that generate spoken responses from spoken input.

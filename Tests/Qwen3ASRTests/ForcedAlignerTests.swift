@@ -69,6 +69,88 @@ final class ForcedAlignerTests: XCTestCase {
         XCTAssertEqual(words, ["Hello", "world", "test"])
     }
 
+    func testTextPreprocessingEnglishSentenceSplitting() {
+        let sentences = TextPreprocessor.splitIntoSentences("Hello world. How are you?")
+        XCTAssertEqual(sentences, ["Hello world.", "How are you?"])
+    }
+
+    func testTextPreprocessingChineseSentenceSplitting() {
+        let sentences = TextPreprocessor.splitIntoSentences("你好世界。这是一个测试。")
+        XCTAssertEqual(sentences, ["你好世界。", "这是一个测试。"])
+    }
+
+    func testTextPreprocessingMixedSentenceSplitting() {
+        let sentences = TextPreprocessor.splitIntoSentences("Hello世界。How are you?")
+        XCTAssertEqual(sentences, ["Hello世界。", "How are you?"])
+    }
+
+    func testTextPreprocessingSentenceSplittingPreservesPunctuationAndTrimsWhitespace() {
+        let sentences = TextPreprocessor.splitIntoSentences("  Hello world. \n This is a test!  ")
+        XCTAssertEqual(sentences, ["Hello world.", "This is a test!"])
+    }
+
+    func testTextPreprocessingSentenceUnitCountMatchesEnglishWordCount() {
+        let text = "Hello world. This is a test."
+        let totalUnits = TextPreprocessor.splitIntoWords(text, language: "English", granularity: .automatic)
+        let sentenceUnits = TextPreprocessor.splitIntoSentences(text)
+            .flatMap { TextPreprocessor.splitIntoWords($0, language: "English", granularity: .automatic) }
+        XCTAssertEqual(sentenceUnits.count, totalUnits.count)
+    }
+
+    func testTextPreprocessingSentenceUnitCountMatchesChineseWordLevel() {
+        let text = "你好世界。这是一个测试。"
+        let totalUnits = TextPreprocessor.splitIntoWords(text, language: "zh", granularity: .word)
+        let sentenceUnits = TextPreprocessor.splitIntoSentences(text)
+            .flatMap { TextPreprocessor.splitIntoWords($0, language: "zh", granularity: .word) }
+        XCTAssertEqual(sentenceUnits.count, totalUnits.count)
+    }
+
+    func testSentenceAggregationUsesFirstAndLastUnitTimes() {
+        let alignedUnits = [
+            AlignedWord(text: "Hello", startTime: 0.0, endTime: 0.5),
+            AlignedWord(text: "world.", startTime: 0.5, endTime: 1.0),
+            AlignedWord(text: "This", startTime: 1.2, endTime: 1.5),
+            AlignedWord(text: "is", startTime: 1.5, endTime: 1.7),
+            AlignedWord(text: "a", startTime: 1.7, endTime: 1.8),
+            AlignedWord(text: "test.", startTime: 1.8, endTime: 2.4),
+        ]
+
+        let sentences = TextPreprocessor.aggregateAlignedUnitsIntoSentences(
+            alignedUnits,
+            originalText: "Hello world. This is a test.",
+            language: "English",
+            granularity: .automatic
+        )
+
+        XCTAssertEqual(sentences.map(\.text), ["Hello world.", "This is a test."])
+        XCTAssertEqual(sentences[0].startTime, 0.0)
+        XCTAssertEqual(sentences[0].endTime, 1.0)
+        XCTAssertEqual(sentences[1].startTime, 1.2)
+        XCTAssertEqual(sentences[1].endTime, 2.4)
+    }
+
+    func testSentenceAggregationPreservesChinesePunctuation() {
+        let alignedUnits = [
+            AlignedWord(text: "你", startTime: 0.0, endTime: 0.2),
+            AlignedWord(text: "好", startTime: 0.2, endTime: 0.4),
+            AlignedWord(text: "世", startTime: 0.4, endTime: 0.6),
+            AlignedWord(text: "界", startTime: 0.6, endTime: 0.8),
+            AlignedWord(text: "这", startTime: 1.0, endTime: 1.2),
+            AlignedWord(text: "是", startTime: 1.2, endTime: 1.4),
+            AlignedWord(text: "测", startTime: 1.4, endTime: 1.6),
+            AlignedWord(text: "试", startTime: 1.6, endTime: 1.8),
+        ]
+
+        let sentences = TextPreprocessor.aggregateAlignedUnitsIntoSentences(
+            alignedUnits,
+            originalText: "你好世界。这是测试。",
+            language: "zh",
+            granularity: .char
+        )
+
+        XCTAssertEqual(sentences.map(\.text), ["你好世界。", "这是测试。"])
+    }
+
     func testTimestampCorrectionAlreadyMonotonic() {
         let input = [1, 3, 5, 7, 9, 11]
         let corrected = TimestampCorrection.enforceMonotonicity(input)

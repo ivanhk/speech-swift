@@ -30,6 +30,9 @@ public struct AlignCommand: ParsableCommand {
     @Flag(name: .long, help: "For Chinese/Han text, align at word granularity")
     public var wordLevel: Bool = false
 
+    @Flag(name: .long, help: "Group final alignment output at sentence granularity")
+    public var sentenceLevel: Bool = false
+
     public init() {}
 
     var normalizedLanguage: String? {
@@ -88,13 +91,24 @@ public struct AlignCommand: ParsableCommand {
 
             print("Aligning...")
             let start = Date()
-            let aligned = aligner.align(
+            let alignedUnits = aligner.align(
                 audio: audio,
                 text: alignText,
                 sampleRate: 24000,
                 language: language,
                 granularity: granularity
             )
+            let aligned: [AlignedWord]
+            if sentenceLevel {
+                aligned = TextPreprocessor.aggregateAlignedUnitsIntoSentences(
+                    alignedUnits,
+                    originalText: alignText,
+                    language: language,
+                    granularity: granularity
+                )
+            } else {
+                aligned = alignedUnits
+            }
             let elapsed = Date().timeIntervalSince(start)
 
             for word in aligned {

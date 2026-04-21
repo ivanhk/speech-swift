@@ -34,7 +34,7 @@ Audio (16kHz) + Text
                         |
                         v
                [AlignedWord] array
-        (word, startTime, endTime)
+        (alignment unit, startTime, endTime)
 ```
 
 ## Architecture
@@ -85,7 +85,7 @@ Each alignment unit gets `<timestamp>` pairs:
 <ts>Can<ts> <ts>you<ts> <ts>guarantee<ts>
 ```
 
-### Chinese Granularity Controls
+### Granularity Controls
 
 `audio align` keeps Chinese-compatible defaults:
 
@@ -93,6 +93,8 @@ Each alignment unit gets `<timestamp>` pairs:
 - `--word-level` opts into tokenizer-based Chinese word segmentation
 - `--char-level` is available for explicitness and for scripts that mix Latin and Han text
 - These flags only affect Chinese/Han text; whitespace-delimited languages keep the existing behavior
+- `--sentence-level` changes only the final CLI grouping: the aligner still runs on unit-level timestamps, then adjacent units are folded back into sentence ranges
+- `--sentence-level` applies to all languages and can be combined with `--char-level` or `--word-level`
 
 Language handling:
 
@@ -117,9 +119,20 @@ One forward pass through the decoder (no cache, no loop). Apply classify head to
 1. Extract logits only at `<timestamp>` positions
 2. argmax → raw timestamp class indices
 3. Multiply by 80ms → raw timestamps in seconds
-4. Pair consecutive timestamps as (start, end) per word
+4. Pair consecutive timestamps as (start, end) per alignment unit
 
-### 5. LIS Monotonicity Correction (TimestampCorrection.swift)
+### 5. Optional Sentence-Level CLI Grouping
+
+When `audio align --sentence-level` is used, the CLI performs one extra post-processing step:
+
+1. Align the full text at the normal unit level
+2. Split the original text into sentences with Foundation `enumerateSubstrings(..., .bySentences)`
+3. Re-run the same unit segmentation rule for each sentence
+4. Fold contiguous unit timestamps into sentence ranges
+
+This preserves sentence punctuation in the final output while keeping the model and public aligner API unchanged.
+
+### 6. LIS Monotonicity Correction (TimestampCorrection.swift)
 
 Raw timestamps may not be monotonic. Fix via:
 1. Find Longest Increasing Subsequence (O(n log n))
@@ -174,6 +187,12 @@ audio align zh.wav --text "一九零八年的春天" --language zh
 # Chinese word-level alignment
 audio align zh.wav --text "一九零八年的春天" --language zh --word-level
 
+# Sentence-level output (all languages)
+audio align audio.wav --text "Hello world. This is a test." --sentence-level
+
+# Chinese sentence-level output with word-level internal segmentation
+audio align zh.wav --text "一九零八年的春天。在奥地利一个小镇上。" --language zh --word-level --sentence-level
+
 # Explicit auto language (same as omitting --language)
 audio align zh.wav --language auto --word-level
 
@@ -188,6 +207,12 @@ Output format:
 [0.45s - 0.72s] you
 [0.72s - 1.20s] guarantee
 ...
+```
+
+Sentence-level output:
+```
+[0.12s - 1.20s] Can you guarantee?
+[1.20s - 2.40s] The replacement part will be shipped tomorrow.
 ```
 
 ## Swift API

@@ -82,6 +82,59 @@ public enum TextPreprocessor {
         return splitWhitespace(text)
     }
 
+    /// Split text into sentences using Foundation's locale-aware sentence boundaries.
+    public static func splitIntoSentences(_ text: String) -> [String] {
+        var sentences: [String] = []
+
+        text.enumerateSubstrings(in: text.startIndex..., options: .bySentences) { substring, _, _, _ in
+            guard let sentence = substring?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !sentence.isEmpty else { return }
+            sentences.append(sentence)
+        }
+
+        if sentences.isEmpty {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                sentences.append(trimmed)
+            }
+        }
+
+        return sentences
+    }
+
+    /// Fold aligned units back into sentence-level ranges while preserving the original sentence text.
+    public static func aggregateAlignedUnitsIntoSentences(
+        _ alignedUnits: [AlignedWord],
+        originalText: String,
+        language: String?,
+        granularity: ForcedAlignmentGranularity = .automatic
+    ) -> [AlignedWord] {
+        guard !alignedUnits.isEmpty else { return [] }
+
+        let sentences = splitIntoSentences(originalText)
+        guard !sentences.isEmpty else { return [] }
+
+        var aggregated: [AlignedWord] = []
+        var nextUnitIndex = 0
+
+        for sentence in sentences {
+            let unitCount = splitIntoWords(sentence, language: language, granularity: granularity).count
+            guard unitCount > 0 else { continue }
+
+            let endUnitIndex = min(nextUnitIndex + unitCount, alignedUnits.count)
+            guard nextUnitIndex < endUnitIndex else { break }
+
+            aggregated.append(AlignedWord(
+                text: sentence,
+                startTime: alignedUnits[nextUnitIndex].startTime,
+                endTime: alignedUnits[endUnitIndex - 1].endTime
+            ))
+            nextUnitIndex = endUnitIndex
+        }
+
+        return aggregated
+    }
+
     /// Split on whitespace and punctuation boundaries (English, European languages)
     private static func splitWhitespace(_ text: String) -> [String] {
         // Split on whitespace, filter empty
